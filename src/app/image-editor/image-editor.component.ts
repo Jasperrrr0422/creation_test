@@ -52,8 +52,9 @@ export class ImageEditorComponent {
     this.editor.execute({ type: command });
   }
 
-  importAiImage(image: AiGeneratedImage): void {
-    this.editor.loadDataUrl(image.dataUrl, `AI / ${image.prompt}`);
+  async importAiImage(image: AiGeneratedImage): Promise<void> {
+    const added = await this.editor.loadDataUrl(image.dataUrl, `AI / ${image.prompt}`);
+    if (added) this.snackBar.open('AI image added next to the selected card.', 'Close', { duration: 2600 });
   }
 
   selectAiSource(dataUrl: string): void {

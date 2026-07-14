@@ -58,6 +58,8 @@ export class EditorCanvasComponent implements AfterViewInit, OnChanges, OnDestro
   private readonly brandFont = creaitionTokens.fontFamily;
   private readonly imageSources = new Map<number, string>();
   private activeSourceImageDataUrl: string | null = null;
+  private activeSourceObjectId: number | null = null;
+  private cardImportQueue: Promise<void> = Promise.resolve();
   private cardCount = 0;
   private viewZoom = 1;
   private panX = 0;
@@ -99,8 +101,9 @@ export class EditorCanvasComponent implements AfterViewInit, OnChanges, OnDestro
       },
     });
     this.editor.on('objectActivated', (object: { id?: number }) => {
-      const source = this.imageSources.get(Number(object.id));
-      if (source) this.selectSourceImage(source);
+      const id = Number(object.id);
+      const source = this.imageSources.get(id);
+      if (source) this.selectSourceImage(source, id);
     });
 
     this.loadStarterArtwork();
@@ -194,16 +197,16 @@ export class EditorCanvasComponent implements AfterViewInit, OnChanges, OnDestro
 
   async loadFile(file: File): Promise<void> {
     if (!this.editor) return;
-    await this.run(async () => {
+    await this.enqueueCardImport(async () => {
       const dataUrl = await this.readFile(file);
       await this.addImageCard(dataUrl, `ORIGINAL / ${file.name}`);
     }, 'That image could not be opened. Try a PNG or JPG file.');
   }
 
-  async loadDataUrl(dataUrl: string, imageName = 'AI generated image'): Promise<void> {
-    if (!this.editor) return;
-    await this.run(async () => {
-      await this.addImageCard(dataUrl, imageName);
+  async loadDataUrl(dataUrl: string, imageName = 'AI generated image'): Promise<boolean> {
+    if (!this.editor) return false;
+    return this.enqueueCardImport(async () => {
+      await this.addImageCard(dataUrl, imageName, true);
     }, 'That generated image could not be imported.');
   }
 
@@ -354,27 +357,67 @@ export class EditorCanvasComponent implements AfterViewInit, OnChanges, OnDestro
     }
   }
 
-  private async addImageCard(dataUrl: string, label: string): Promise<void> {
+  private async addImageCard(dataUrl: string, label: string, placeNearSelection = false): Promise<void> {
     if (!this.editor) return;
     const cardDataUrl = await this.createCardDataUrl(dataUrl, label);
-    const object = await this.editor.addImageObject(cardDataUrl) as unknown as { id: number };
+    const object = await this.editor.addImageObject(cardDataUrl) as unknown as {
+      id: number;
+      width?: number;
+      height?: number;
+    };
     const id = Number(object.id);
-    const column = this.cardCount % 3;
-    const row = Math.floor(this.cardCount / 3) % 2;
+    if (!Number.isFinite(id)) throw new Error('The image card was created without a valid canvas object.');
+    const position = this.nextCardPosition(object, placeNearSelection);
     await this.editor.setObjectPosition(id, {
-      x: 70 + column * 575,
-      y: 70 + row * 550,
+      x: position.x,
+      y: position.y,
       originX: 'left',
       originY: 'top',
     });
     this.imageSources.set(id, dataUrl);
-    this.selectSourceImage(dataUrl);
+    this.selectSourceImage(dataUrl, id);
     this.cardCount += 1;
+    const graphics = this.getGraphics();
+    const fabricObject = graphics?.getObject(id);
+    if (fabricObject) graphics?._canvas.setActiveObject(fabricObject);
+    graphics?._canvas.requestRenderAll();
   }
 
-  private selectSourceImage(dataUrl: string): void {
+  private selectSourceImage(dataUrl: string, objectId: number): void {
     this.activeSourceImageDataUrl = dataUrl;
+    this.activeSourceObjectId = objectId;
     this.zone.run(() => this.sourceImageChange.emit(dataUrl));
+  }
+
+  private nextCardPosition(
+    card: { width?: number; height?: number },
+    placeNearSelection: boolean,
+  ): { x: number; y: number } {
+    const margin = 70;
+    const gap = 48;
+    const cardWidth = Number(card.width || 560);
+    const cardHeight = Number(card.height || 520);
+    const graphics = this.getGraphics();
+    const source = placeNearSelection && this.activeSourceObjectId !== null
+      ? graphics?.getObject(this.activeSourceObjectId)
+      : null;
+
+    if (source) {
+      const rightTop = source.getPointByOrigin('right', 'top');
+      const leftBottom = source.getPointByOrigin('left', 'bottom');
+      const leftTop = source.getPointByOrigin('left', 'top');
+      if (rightTop.x + gap + cardWidth <= this.workspaceWidth - margin) {
+        return { x: rightTop.x + gap, y: Math.max(margin, rightTop.y) };
+      }
+      if (leftBottom.y + gap + cardHeight <= this.workspaceHeight - margin) {
+        return { x: Math.max(margin, leftTop.x), y: leftBottom.y + gap };
+      }
+    }
+
+    const columns = Math.max(1, Math.floor((this.workspaceWidth - margin * 2 + gap) / (575 + gap)));
+    const column = this.cardCount % columns;
+    const row = Math.floor(this.cardCount / columns);
+    return { x: margin + column * (575 + gap), y: margin + row * (550 + gap) };
   }
 
   private async createCardDataUrl(dataUrl: string, label: string): Promise<string> {
@@ -538,6 +581,7 @@ export class EditorCanvasComponent implements AfterViewInit, OnChanges, OnDestro
       backgroundColor: string;
       getObjects(): Array<{ left?: number; top?: number; set(values: Record<string, unknown>): void; setCoords(): void }>;
       requestRenderAll(): void;
+      setActiveObject(object: unknown): void;
       setViewportTransform(transform: number[]): void;
     };
     canvasImage: {
@@ -548,6 +592,9 @@ export class EditorCanvasComponent implements AfterViewInit, OnChanges, OnDestro
     };
     setCanvasBackstoreDimension(dimension: { width: number; height: number }): void;
     setCanvasCssDimension(dimension: { width: string; height: string }): void;
+    getObject(id: number): {
+      getPointByOrigin(originX: string, originY: string): { x: number; y: number };
+    } | null;
   } | null {
     return (this.editor as unknown as { _graphics?: ReturnType<EditorCanvasComponent['getGraphics']> })?._graphics ?? null;
   }
@@ -570,13 +617,21 @@ export class EditorCanvasComponent implements AfterViewInit, OnChanges, OnDestro
     return !!element?.closest('input, textarea, select, [contenteditable="true"]');
   }
 
-  private async run(action: () => void | Promise<unknown>, fallback: string): Promise<void> {
+  private enqueueCardImport(action: () => void | Promise<unknown>, fallback: string): Promise<boolean> {
+    const result = this.cardImportQueue.then(() => this.run(action, fallback));
+    this.cardImportQueue = result.then(() => undefined, () => undefined);
+    return result;
+  }
+
+  private async run(action: () => void | Promise<unknown>, fallback: string): Promise<boolean> {
     this.busyChange.emit(true);
     try {
       await action();
+      return true;
     } catch (error) {
       const message = error instanceof Error && error.message ? error.message : fallback;
       this.zone.run(() => this.errorMessage.emit(message));
+      return false;
     } finally {
       this.busyChange.emit(false);
     }
