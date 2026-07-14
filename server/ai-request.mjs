@@ -16,7 +16,8 @@ export async function generateQwenImage(payload) {
   validatePayload(payload);
   await configureNetwork();
   const { InferenceClient } = await import('@huggingface/inference');
-  const client = new InferenceClient(payload.token || process.env.HF_TOKEN || '');
+  const accessToken = normalizeToken(payload.token || process.env.HF_TOKEN || '');
+  const client = new InferenceClient(accessToken);
   const sourceImage = dataUrlToBlob(payload.sourceImageDataUrl);
   const parameters = payload.parameters || {};
   const instruction = modeInstructions[payload.mode] || modeInstructions['image-to-image'];
@@ -50,7 +51,7 @@ export async function generateQwenImage(payload) {
 
 function validatePayload(payload) {
   if (!payload || typeof payload !== 'object') throw new AiGatewayError('Request body is required.', 400);
-  if (!(payload.token || process.env.HF_TOKEN)) throw new AiGatewayError('A Hugging Face token is required.', 401);
+  normalizeToken(payload.token || process.env.HF_TOKEN || '');
   if (typeof payload.model !== 'string' || !payload.model.startsWith('Qwen/Qwen-Image-Edit')) {
     throw new AiGatewayError('Unsupported image model.', 400);
   }
@@ -62,8 +63,28 @@ function validatePayload(payload) {
 
 function dataUrlToBlob(dataUrl) {
   const [metadata, encoded = ''] = dataUrl.split(',');
-  const mimeType = metadata.match(/data:([^;]+)/)?.[1] || 'image/png';
+  const declaredMimeType = metadata.match(/data:([^;]+)/)?.[1]?.toLowerCase() || 'image/png';
+  const mimeType = sanitizeImageMimeType(declaredMimeType);
   return new Blob([Buffer.from(encoded, 'base64')], { type: mimeType });
+}
+
+function normalizeToken(value) {
+  const token = String(value || '').trim();
+  if (!token) throw new AiGatewayError('A Hugging Face token is required.', 401);
+  if (!token.startsWith('hf_')) {
+    throw new AiGatewayError('Hugging Face token must start with "hf_". Clear the token field to use the server HF_TOKEN.', 401);
+  }
+  if (!/^[\x21-\x7e]+$/.test(token)) {
+    throw new AiGatewayError('Hugging Face token contains unsupported characters. Paste the raw hf_ token only.', 401);
+  }
+  return token;
+}
+
+function sanitizeImageMimeType(value) {
+  const allowedTypes = new Set(['image/png', 'image/jpeg', 'image/webp']);
+  if (allowedTypes.has(value)) return value;
+  if (value === 'image/jpg') return 'image/jpeg';
+  return 'image/png';
 }
 
 function clamp(value, min, max, fallback) {
