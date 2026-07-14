@@ -123,6 +123,59 @@ textarea {
   resize: vertical;
 }
 
+.prompt-field {
+  position: relative;
+}
+
+.autocomplete-list {
+  background: var(--color-white);
+  border: 1px solid var(--color-black);
+  box-shadow: 0 18px 42px rgba(0, 0, 0, 0.14);
+  display: grid;
+  left: 0;
+  max-height: 238px;
+  overflow-y: auto;
+  position: absolute;
+  right: 0;
+  top: calc(100% + 6px);
+  z-index: 8;
+}
+
+.autocomplete-list button {
+  background: var(--color-white);
+  border: 0;
+  border-bottom: 1px solid var(--color-gray-1);
+  border-radius: 0;
+  color: var(--color-black);
+  cursor: pointer;
+  display: grid;
+  font: inherit;
+  gap: 4px;
+  min-height: 54px;
+  padding: 10px 12px;
+  text-align: left;
+}
+
+.autocomplete-list button:last-child {
+  border-bottom: 0;
+}
+
+.autocomplete-list button.active,
+.autocomplete-list button:hover {
+  background: var(--color-gray-1);
+  font-variation-settings: 'wght' var(--font-weight-medium), 'slnt' var(--font-slant-hover);
+}
+
+.autocomplete-list span {
+  font-size: 12px;
+}
+
+.autocomplete-list small {
+  color: var(--color-gray-2);
+  font-size: 10px;
+  line-height: 1.35;
+}
+
 input:focus,
 select:focus,
 textarea:focus {

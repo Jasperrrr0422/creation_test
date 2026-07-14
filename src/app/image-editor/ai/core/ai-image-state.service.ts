@@ -55,11 +55,11 @@ const models: AiModelConfig[] = [
 ];
 
 const suggestionsByMode: Record<AiGenerationMode, string[]> = {
-  'text-to-image': ['黑白极简品牌海报', '高对比度产品摄影', '干净的编辑设计风格'],
-  'image-to-image': ['保持主体和构图不变，只调整整体视觉风格', '将背景替换为纯白摄影棚', '增强产品细节与自然阴影'],
-  inpaint: ['只修改指定对象，其他区域保持完全不变', '删除背景中的杂物并自然补全', '替换画面中的文字并保持原字体风格'],
-  'style-transfer': ['转换为黑白编辑风格并保留主体特征', '转换为极简品牌海报风格', '应用高对比度时尚杂志风格'],
-  upscale: ['提升清晰度并修复压缩噪点', '增强边缘细节但不要改变内容', '修复模糊区域并保持自然纹理'],
+  'text-to-image': ['minimal monochrome brand poster', 'high contrast product photography', 'clean editorial design system'],
+  'image-to-image': ['keep subject and composition unchanged', 'replace the background with a pure white studio', 'enhance product details and natural shadows'],
+  inpaint: ['only edit the described area', 'remove distracting objects and reconstruct naturally', 'replace the text while preserving typography'],
+  'style-transfer': ['convert to a monochrome editorial style', 'apply a minimal brand poster look', 'use a high contrast fashion magazine treatment'],
+  upscale: ['increase clarity and reduce compression noise', 'enhance edge detail without changing content', 'restore blurry areas with natural texture'],
 };
 
 interface BatchResult {

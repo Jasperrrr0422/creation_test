@@ -42,13 +42,33 @@
 
       <section>
         <label class="field-label" for="ai-prompt">Prompt</label>
-        <textarea
-          id="ai-prompt"
-          rows="4"
-          [ngModel]="state.prompt"
-          (ngModelChange)="ai.updatePrompt($event)"
-          placeholder="描述你希望如何修改当前图片"
-        ></textarea>
+        <div class="prompt-field">
+          <textarea
+            id="ai-prompt"
+            rows="4"
+            [ngModel]="state.prompt"
+            (focus)="autocompleteOpen = true"
+            (blur)="autocompleteOpen = false"
+            (keydown)="onPromptKeydown($event, state)"
+            (ngModelChange)="updatePrompt($event)"
+            placeholder="Describe how you want to edit the selected image"
+          ></textarea>
+          @if (showAutocomplete(state)) {
+            <div class="autocomplete-list" role="listbox" aria-label="Prompt autocomplete">
+              @for (completion of promptAutocomplete(state); track completion.value; let index = $index) {
+                <button
+                  type="button"
+                  role="option"
+                  [class.active]="index === highlightedCompletionIndex"
+                  (mousedown)="$event.preventDefault(); selectAutocomplete(state, completion)"
+                >
+                  <span>{{ completion.label }}</span>
+                  <small>{{ completion.value }}</small>
+                </button>
+              }
+            </div>
+          }
+        </div>
         <div class="suggestions" aria-label="Prompt suggestions">
           @for (suggestion of state.suggestions; track suggestion) {
             <button type="button" (click)="useSuggestion(state, suggestion)">{{ suggestion }}</button>

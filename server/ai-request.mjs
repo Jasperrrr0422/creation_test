@@ -1,8 +1,8 @@
 const modeInstructions = {
   'image-to-image': 'Preserve the complete image frame, dimensions, composition, typography, and all unmentioned pixels. Do not crop, zoom, shift, resize, reframe, or move edge content. Only apply the requested change.',
-  inpaint: 'Only change the object or area described by the user. Keep every other pixel, the complete frame, and all typography unchanged. Do not crop or reframe.',
+  inpaint: 'Perform image repair only on the object, defect, or area described by the user. Remove artifacts, scratches, unwanted objects, stains, blur, or damage only when requested. Reconstruct the missing area naturally from surrounding context. Keep every other pixel, the complete frame, and all typography unchanged. Do not crop, zoom, shift, or reframe.',
   'style-transfer': 'Apply the requested visual style while preserving subject identity and composition.',
-  upscale: 'Improve clarity, edge detail, and texture. Do not add or remove content.',
+  upscale: 'Perform quality enhancement and restoration. Increase clarity, sharpen edges, reduce compression noise, recover fine texture, and improve natural shadows. Do not add, remove, crop, reframe, restyle, or change the content.',
 };
 
 export class AiGatewayError extends Error {
