@@ -27,14 +27,16 @@ html {
 
 @font-face {
   font-family: 'strokeWeight';
-  src: local('strokeWeight');
+  src: local('strokeWeight'),
+       url('/assets/fonts/strokeWeight-var.woff2') format('woff2-variations');
   font-style: oblique 0deg 12deg;
-  font-weight: 60 120;
+  font-weight: 20 180;
   font-display: swap;
 }
 @font-face {
   font-family: 'Eina03';
-  src: local('Eina03-Regular');
+  src: local('Eina03-Regular'),
+       url('/assets/fonts/Eina03-Regular.woff2') format('woff2');
   font-style: normal;
   font-weight: 400;
   font-display: swap;
