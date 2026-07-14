@@ -2,7 +2,11 @@
 
 基于 Angular 18、Angular Material、RxJS 和 `tui-image-editor@3.15.0` 二次改造的 Creaition 品牌图片编辑器。项目在 TUI/Fabric 画布能力之上实现了多图片白卡画布、AI 图像编辑、状态管理、本地持久化和 Vercel Serverless AI 网关。
 
-![Creaition AI Image Editor](docs/screenshots/editor-ai.png)
+![Creaition AI Image Editor 桌面端](docs/screenshots/editor-desktop.jpg)
+
+<p align="center">
+  <img src="docs/screenshots/editor-mobile.png" alt="Creaition AI Image Editor 移动端" width="320">
+</p>
 
 ## 在线演示
 
