@@ -93,7 +93,7 @@ export class AiImageStateService {
   }
 
   updateToken(apiToken: string): void {
-    this.patch({ preferences: { ...this.snapshot.preferences, apiToken: apiToken.trim() } });
+    this.patch({ preferences: { ...this.snapshot.preferences, apiToken: this.normalizeTokenInput(apiToken) } });
     this.persistPreferences();
   }
 
@@ -243,6 +243,10 @@ export class AiImageStateService {
   private validateRequest(request: AiGenerationRequest): string | null {
     if (!request.prompt.trim()) return 'Describe how you want to edit the image.';
     if (!request.sourceImageDataUrl) return 'Select an image card before editing.';
+    const token = this.snapshot.preferences.apiToken;
+    if (token && !token.startsWith('hf_')) {
+      return 'Hugging Face token must start with "hf_". Paste only the token value, or clear the field to use HF_TOKEN.';
+    }
     if (this.snapshot.quota.exhausted || this.snapshot.quota.used + request.batchSize > this.snapshot.quota.monthlyLimit) {
       return 'The monthly request limit is exhausted.';
     }
@@ -389,6 +393,15 @@ export class AiImageStateService {
     if (!this.storage.savePreferences(this.snapshot.preferences)) {
       this.patch({ error: 'Local preferences could not be saved.' });
     }
+  }
+
+  private normalizeTokenInput(value: string): string {
+    return value
+      .trim()
+      .replace(/^bearer\s+/i, '')
+      .replace(/^["']|["']$/g, '')
+      .replace(/[\u200B-\u200D\uFEFF]/g, '')
+      .trim();
   }
 
   private patch(statePatch: Partial<AiImageState>): void {

@@ -69,10 +69,15 @@ function dataUrlToBlob(dataUrl) {
 }
 
 function normalizeToken(value) {
-  const token = String(value || '').trim();
+  const token = String(value || '')
+    .trim()
+    .replace(/^bearer\s+/i, '')
+    .replace(/^["']|["']$/g, '')
+    .replace(/[\u200B-\u200D\uFEFF]/g, '')
+    .trim();
   if (!token) throw new AiGatewayError('A Hugging Face token is required.', 401);
   if (!token.startsWith('hf_')) {
-    throw new AiGatewayError('Hugging Face token must start with "hf_". Clear the token field to use the server HF_TOKEN.', 401);
+    throw new AiGatewayError('Hugging Face token must start with "hf_". Paste only the token value, or clear the token field to use the server HF_TOKEN.', 401);
   }
   if (!/^[\x21-\x7e]+$/.test(token)) {
     throw new AiGatewayError('Hugging Face token contains unsupported characters. Paste the raw hf_ token only.', 401);
