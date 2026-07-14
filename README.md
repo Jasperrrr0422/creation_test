@@ -150,8 +150,8 @@ Value: 你的 Hugging Face Token
 
 ### 2. Creaition 品牌视觉适配
 
-- 全局使用 `strokeWeight` 可变字体，配置 `wght` 和 `slnt` 字体变量。
-- 字体回退为 `Eina03-Regular`。
+- 全局使用 `strokeWeight` 可变字体（WOFF2 随仓库打包），配置 `wght` 和 `slnt` 字体变量。
+- 字体回退为 `Eina03-Regular`（同样随仓库打包）。
 - 颜色系统严格使用 Creaition 单色体系：黑、白、一级灰 `#efefee`、二级灰 `#bebebe`、页面背景 `#f0f0f0`。
 - 按钮圆角统一为 `50px`，按钮最小高度为 `35px`。
 - 输入框和表单控件圆角为 `0px`，高度为 `50px`。
@@ -294,7 +294,12 @@ font-variation-settings: "wght" 60, "slnt" 0;
 font-variation-settings: "wght" 80, "slnt" 12;
 ```
 
-当前仓库不包含 `strokeWeight` 和 `Eina03-Regular` 的授权字体文件。应用会优先读取系统已安装字体并自动回退。正式提交品牌版本时，应在获得授权后加入 WOFF2 字体文件和 `@font-face` 资源声明。
+品牌字体以 WOFF2 形式随仓库打包，位于 `public/assets/fonts/`：
+
+- `strokeWeight-var.woff2`：`strokeWeight(var)` 可变字体，`wght` 轴 20–180，`slnt` 轴 -12–12，覆盖设计规范要求的 60/80/120 字重和 0/12 倾斜。
+- `Eina03-Regular.woff2`：回退字体。
+
+`@font-face` 使用 `local()` 优先读取系统已安装字体，未安装时回退到打包的 WOFF2 文件，因此在未安装字体的评审环境和线上部署中也能正确渲染可变字体效果。`index.html` 会预加载这两个字体以减少首屏字体闪烁。
 
 ### 响应式布局策略
 
