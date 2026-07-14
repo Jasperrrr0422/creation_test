@@ -9,13 +9,13 @@ import { AiPanelComponent } from './ai/ai-panel/ai-panel.component';
 import { AiGeneratedImage } from './ai/core/ai-image.types';
 
 @Component({
-  selector: 'app-image-editor-page',
+  selector: 'app-image-editor',
   standalone: true,
   imports: [AiPanelComponent, EditorCanvasComponent, MatSnackBarModule, PropertiesPanelComponent, ToolbarComponent],
-  templateUrl: './image-editor-page.component.html',
-  styleUrl: './image-editor-page.component.scss',
+  templateUrl: './image-editor.component.html',
+  styleUrl: './image-editor.component.scss',
 })
-export class ImageEditorPageComponent {
+export class ImageEditorComponent {
   @ViewChild(EditorCanvasComponent) editor!: EditorCanvasComponent;
 
   activeTool: EditorTool = 'select';
@@ -38,6 +38,7 @@ export class ImageEditorPageComponent {
     this.activeTool = tool;
     this.panelOpen = true;
     this.mobileToolbarOpen = false;
+    this.editor?.refreshViewport();
   }
 
   onFileSelected(event: Event): void {
@@ -52,12 +53,26 @@ export class ImageEditorPageComponent {
   }
 
   importAiImage(image: AiGeneratedImage): void {
-    this.editor.loadDataUrl(image.dataUrl, `AI ${image.modelId}`);
+    this.editor.loadDataUrl(image.dataUrl, `AI / ${image.prompt}`);
   }
 
-  useCanvasAsAiSource(): void {
-    this.aiSourceImageDataUrl = this.editor.getDataUrl();
-    this.showError(this.aiSourceImageDataUrl ? 'Canvas source captured for AI.' : 'Canvas is not ready yet.');
+  selectAiSource(dataUrl: string): void {
+    this.aiSourceImageDataUrl = dataUrl;
+  }
+
+  toggleProperties(): void {
+    this.panelOpen = !this.panelOpen;
+    this.editor?.refreshViewport();
+  }
+
+  openProperties(): void {
+    this.panelOpen = true;
+    this.editor?.refreshViewport();
+  }
+
+  closeProperties(): void {
+    this.panelOpen = false;
+    this.editor?.refreshViewport();
   }
 
   showError(message: string): void {

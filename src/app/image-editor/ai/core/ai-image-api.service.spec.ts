@@ -19,7 +19,6 @@ describe('AiImageApiService', () => {
   it('sends Qwen image edits through the same-origin gateway', () => {
     const request: AiGenerationRequest = {
       prompt: 'Keep the subject and replace the background',
-      negativePrompt: 'blur',
       modelId: 'qwen-image-edit',
       mode: 'image-to-image',
       sourceImageDataUrl: 'data:image/png;base64,AA==',

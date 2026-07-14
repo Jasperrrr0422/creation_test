@@ -57,3 +57,12 @@ export const creaitionEditorTheme: Theme = {
   'colorpicker.button.border': `1px solid ${creaitionTokens.gray2}`,
   'colorpicker.title.color': creaitionTokens.black,
 };
+
+export function applyCreaitionEditorTheme(host: HTMLElement): void {
+  host.dataset['tuiTheme'] = 'creaition';
+  host.style.setProperty('--tui-theme-background', String(creaitionEditorTheme['common.backgroundColor']));
+  host.style.setProperty('--tui-theme-surface', String(creaitionEditorTheme['submenu.backgroundColor']));
+  host.style.setProperty('--tui-theme-text', String(creaitionEditorTheme['submenu.normalLabel.color']));
+  host.style.setProperty('--tui-theme-border', creaitionTokens.gray2);
+  host.style.setProperty('--tui-theme-font', creaitionTokens.fontFamily);
+}

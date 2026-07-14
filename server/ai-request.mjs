@@ -28,7 +28,6 @@ export async function generateQwenImage(payload) {
       inputs: sourceImage,
       parameters: {
         prompt: `${instruction}\nUser request: ${payload.prompt}`,
-        negative_prompt: payload.negativePrompt || '',
         num_inference_steps: clamp(parameters.steps, 8, 80, 50),
         guidance_scale: clamp(parameters.guidanceScale, 1, 20, 4),
         image_size: {

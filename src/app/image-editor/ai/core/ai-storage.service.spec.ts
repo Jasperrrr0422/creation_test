@@ -8,7 +8,6 @@ describe('AiStorageService', () => {
     activeModelId: 'qwen-image-edit',
     mode: 'image-to-image',
     prompt: 'Edit this image',
-    negativePrompt: 'blur',
     parametersByModel: {
       'qwen-image-edit': { width: 1024, height: 1024, steps: 50, guidanceScale: 4, strength: 0.7, batchSize: 1 },
       'qwen-image-edit-2509': { width: 1024, height: 1024, steps: 40, guidanceScale: 4.5, strength: 0.7, batchSize: 1 },

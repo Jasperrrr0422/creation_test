@@ -1,10 +1,10 @@
 import { Component } from '@angular/core';
-import { ImageEditorPageComponent } from './image-editor/image-editor-page.component';
+import { ImageEditorComponent } from './image-editor/image-editor.component';
 
 @Component({
   selector: 'app-root',
   standalone: true,
-  imports: [ImageEditorPageComponent],
+  imports: [ImageEditorComponent],
   templateUrl: './app.component.html',
   styleUrl: './app.component.scss'
 })

@@ -91,14 +91,6 @@ export class AiImageStateService {
     this.persistPreferences();
   }
 
-  updateNegativePrompt(negativePrompt: string): void {
-    this.patch({
-      negativePrompt,
-      preferences: { ...this.snapshot.preferences, negativePrompt },
-    });
-    this.persistPreferences();
-  }
-
   updateToken(apiToken: string): void {
     this.patch({ preferences: { ...this.snapshot.preferences, apiToken: apiToken.trim() } });
     this.persistPreferences();
@@ -209,7 +201,6 @@ export class AiImageStateService {
     return {
       id: crypto.randomUUID(),
       prompt: request.prompt,
-      negativePrompt: request.negativePrompt,
       modelId: request.modelId,
       mode: request.mode,
       dataUrl,
@@ -227,9 +218,8 @@ export class AiImageStateService {
   }
 
   private validateRequest(request: AiGenerationRequest): string | null {
-    if (!this.snapshot.preferences.apiToken) return 'Add a Hugging Face token before editing.';
     if (!request.prompt.trim()) return 'Describe how you want to edit the image.';
-    if (!request.sourceImageDataUrl) return 'Use the current canvas as the source image first.';
+    if (!request.sourceImageDataUrl) return 'Select an image card before editing.';
     if (this.snapshot.quota.exhausted || this.snapshot.quota.used + request.batchSize > this.snapshot.quota.monthlyLimit) {
       return 'The monthly request limit is exhausted.';
     }
@@ -246,7 +236,6 @@ export class AiImageStateService {
     return {
       ...parameters,
       prompt: this.snapshot.prompt,
-      negativePrompt: this.snapshot.negativePrompt,
       modelId: preferences.activeModelId,
       mode: preferences.mode,
       sourceImageDataUrl: this.snapshot.sourceImageDataUrl ?? undefined,
@@ -325,7 +314,6 @@ export class AiImageStateService {
     const quota = this.loadQuota();
     return {
       prompt: preferences.prompt,
-      negativePrompt: preferences.negativePrompt,
       suggestions: this.getSuggestions(preferences.prompt, preferences.mode),
       images: history.slice(0, 4),
       history,
@@ -362,7 +350,6 @@ export class AiImageStateService {
       activeModelId,
       mode,
       prompt: stored.prompt ?? '保持主体和构图不变，将画面改为黑白极简品牌海报',
-      negativePrompt: stored.negativePrompt ?? '低质量，模糊，变形，多余文字',
       parametersByModel,
     };
   }

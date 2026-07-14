@@ -15,7 +15,6 @@ import { AiImageStateService } from '../core/ai-image-state.service';
 export class AiPanelComponent implements OnChanges, OnDestroy {
   @Input() sourceImageDataUrl: string | null = null;
   @Output() importImage = new EventEmitter<AiGeneratedImage>();
-  @Output() captureCanvasSource = new EventEmitter<void>();
 
   readonly ai = inject(AiImageStateService);
   readonly state$ = this.ai.state$;
@@ -64,6 +63,8 @@ export class AiPanelComponent implements OnChanges, OnDestroy {
 
   generate(): void {
     this.generation?.unsubscribe();
-    this.generation = this.ai.generate().subscribe();
+    this.generation = this.ai.generate().subscribe((images) => {
+      images.forEach((image) => this.importImage.emit(image));
+    });
   }
 }

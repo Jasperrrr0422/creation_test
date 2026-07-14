@@ -21,7 +21,6 @@ export class AiImageApiService {
       model: model.endpoint,
       mode: request.mode,
       prompt: request.prompt,
-      negativePrompt: request.negativePrompt,
       sourceImageDataUrl: request.sourceImageDataUrl,
       parameters: {
         width: request.width,
@@ -59,7 +58,9 @@ export class AiImageApiService {
 
   private messageForStatus(status: number, detail: string): string {
     if (status === 400 || status === 422) return detail || 'The image or generation parameters are invalid.';
-    if (status === 401 || status === 403) return 'The Hugging Face token is invalid or lacks Inference Providers permission.';
+    if (status === 401 || status === 403) {
+      return detail || 'Add a valid Hugging Face token or configure HF_TOKEN on the server.';
+    }
     if (status === 402) return 'The Hugging Face inference credit is exhausted.';
     if (status === 413) return 'The source image is too large. Use a smaller canvas and try again.';
     if (status === 429) return 'Too many AI requests. Wait a moment before trying again.';

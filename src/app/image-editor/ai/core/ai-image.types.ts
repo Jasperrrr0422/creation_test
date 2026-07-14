@@ -38,7 +38,6 @@ export interface AiModelParameters {
 
 export interface AiGenerationRequest extends AiModelParameters {
   prompt: string;
-  negativePrompt: string;
   modelId: AiModelId;
   mode: AiGenerationMode;
   sourceImageDataUrl?: string;
@@ -47,7 +46,6 @@ export interface AiGenerationRequest extends AiModelParameters {
 export interface AiGeneratedImage {
   id: string;
   prompt: string;
-  negativePrompt: string;
   modelId: AiModelId;
   mode: AiGenerationMode;
   dataUrl: string;
@@ -68,13 +66,11 @@ export interface AiPreferences {
   activeModelId: AiModelId;
   mode: AiGenerationMode;
   prompt: string;
-  negativePrompt: string;
   parametersByModel: Record<AiModelId, AiModelParameters>;
 }
 
 export interface AiImageState {
   prompt: string;
-  negativePrompt: string;
   suggestions: string[];
   images: AiGeneratedImage[];
   history: AiGeneratedImage[];

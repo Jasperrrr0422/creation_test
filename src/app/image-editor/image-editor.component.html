@@ -9,7 +9,7 @@
     (undo)="run('undo')"
     (redo)="run('redo')"
     (toggleMobile)="mobileToolbarOpen = !mobileToolbarOpen"
-    (togglePanel)="panelOpen = !panelOpen"
+    (togglePanel)="toggleProperties()"
   />
 
   <section class="canvas-stage" [class.busy]="busy">
@@ -18,15 +18,15 @@
       [settings]="settings"
       (busyChange)="busy = $event"
       (errorMessage)="showError($event)"
+      (sourceImageChange)="selectAiSource($event)"
     />
     @if (!panelOpen) {
-      <button class="properties-fab" type="button" (click)="panelOpen = true">Properties</button>
+      <button class="properties-fab" type="button" (click)="openProperties()">Properties</button>
     }
   </section>
 
   <app-ai-panel
     [sourceImageDataUrl]="aiSourceImageDataUrl"
-    (captureCanvasSource)="useCanvasAsAiSource()"
     (importImage)="importAiImage($event)"
   />
 
@@ -36,7 +36,7 @@
     [open]="panelOpen"
     (settingsChange)="settings = $event"
     (command)="editor.execute($event)"
-    (close)="panelOpen = false"
+    (close)="closeProperties()"
   />
 
   <input #fileInput class="visually-hidden" type="file" accept="image/png,image/jpeg,image/webp" (change)="onFileSelected($event)" />

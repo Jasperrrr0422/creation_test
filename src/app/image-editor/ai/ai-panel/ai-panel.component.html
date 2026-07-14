@@ -20,14 +20,14 @@
 
     <div class="panel-content">
       <section>
-        <label class="field-label" for="hf-token">Hugging Face token</label>
+        <label class="field-label" for="hf-token">Hugging Face token (optional)</label>
         <input
           id="hf-token"
           type="password"
           autocomplete="off"
           [ngModel]="state.preferences.apiToken"
           (ngModelChange)="ai.updateToken($event)"
-          placeholder="Bearer token"
+          placeholder="Uses server token when empty"
         />
       </section>
 
@@ -69,16 +69,6 @@
       </section>
 
       <section>
-        <label class="field-label" for="negative-prompt">Negative prompt</label>
-        <input
-          id="negative-prompt"
-          type="text"
-          [ngModel]="state.negativePrompt"
-          (ngModelChange)="ai.updateNegativePrompt($event)"
-        />
-      </section>
-
-      <section>
         <div class="param-row">
           <label>Size</label>
           <div class="inline-inputs">
@@ -97,17 +87,12 @@
         </div>
       </section>
 
-      <section>
-        <button class="action-button" type="button" (click)="captureCanvasSource.emit()">
-          Use canvas as source
-        </button>
-        @if (state.sourceImageDataUrl) {
-          <div class="source-ready">
-            <img [src]="state.sourceImageDataUrl" alt="Current AI source" />
-            <span>Canvas source ready for Qwen</span>
-          </div>
-        }
-      </section>
+      @if (state.sourceImageDataUrl) {
+        <div class="source-ready">
+          <img [src]="state.sourceImageDataUrl" alt="Selected AI source" />
+          <span>Selected image will be edited</span>
+        </div>
+      }
 
       @if (state.error) {
         <div class="error-box">
@@ -122,7 +107,7 @@
 
       @if (state.loading || state.progress > 0) {
         <div class="progress-meta">
-          <span>{{ state.progressLabel }}</span>
+          <span>Estimated · {{ state.progressLabel }}</span>
           <span>{{ state.progress }}%</span>
         </div>
         <div class="progress-track" aria-label="Generation progress">
@@ -140,7 +125,7 @@
             <article class="image-card">
               <img [src]="image.dataUrl" [alt]="image.prompt" />
               <div class="image-actions">
-                <button type="button" (click)="importImage.emit(image)">Import</button>
+                <button type="button" (click)="importImage.emit(image)">Add again</button>
                 <button type="button" (click)="ai.toggleFavorite(image.id)">{{ image.favorite ? 'Saved' : 'Save' }}</button>
               </div>
             </article>
