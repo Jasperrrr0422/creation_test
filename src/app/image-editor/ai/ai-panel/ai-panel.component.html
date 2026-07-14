@@ -63,6 +63,7 @@
                   (mousedown)="$event.preventDefault(); selectAutocomplete(state, completion)"
                 >
                   <span>{{ completion.label }}</span>
+                  <em>{{ completion.description }}</em>
                   <small>{{ completion.value }}</small>
                 </button>
               }
