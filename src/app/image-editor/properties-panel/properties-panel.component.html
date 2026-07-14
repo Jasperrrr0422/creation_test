@@ -1,0 +1,109 @@
+<aside class="panel" [class.open]="open" aria-label="Tool properties">
+  <div class="panel-header">
+    <div><p class="eyebrow">Properties</p><h2>{{ activeTool === 'select' ? 'Canvas' : activeTool }}</h2></div>
+    <button type="button" class="close-button" aria-label="Close properties" matTooltip="Close properties" (click)="close.emit()">
+      <lucide-icon name="x" [size]="18" />
+    </button>
+  </div>
+
+  <div class="panel-content">
+    @switch (activeTool) {
+      @case ('crop') {
+        <section>
+          <h3>Crop selection</h3>
+          <p class="hint">Drag on the artwork to set a crop area.</p>
+          <button class="action-button dark" type="button" (click)="run('apply-crop')">
+            <lucide-icon name="check" [size]="17" /> Apply crop
+          </button>
+        </section>
+      }
+      @case ('rotate') {
+        <section>
+          <h3>Rotation</h3>
+          <div class="action-grid">
+            <button class="action-button" type="button" (click)="run('rotate-left')"><lucide-icon name="rotate-ccw" [size]="17" /> Left 90°</button>
+            <button class="action-button" type="button" (click)="run('rotate-right')"><lucide-icon name="rotate-cw" [size]="17" /> Right 90°</button>
+          </div>
+        </section>
+      }
+      @case ('flip') {
+        <section>
+          <h3>Mirror</h3>
+          <div class="action-grid">
+            <button class="action-button" type="button" (click)="run('flip-x')">Horizontal</button>
+            <button class="action-button" type="button" (click)="run('flip-y')">Vertical</button>
+          </div>
+        </section>
+      }
+      @case ('draw') {
+        <section>
+          <h3>Brush</h3>
+          <label class="field-label">Color</label>
+          <div class="swatches">
+            @for (color of colors; track color) {
+              <button type="button" class="swatch" [class.selected]="settings.color === color" [style.background]="color" [attr.aria-label]="'Use color ' + color" (click)="update('color', color)"></button>
+            }
+          </div>
+          <div class="slider-heading"><label>Brush size</label><output>{{ settings.strokeWidth }} px</output></div>
+          <mat-slider min="1" max="30" step="1" discrete>
+            <input matSliderThumb [ngModel]="settings.strokeWidth" (ngModelChange)="update('strokeWidth', $event)" />
+          </mat-slider>
+        </section>
+      }
+      @case ('shape') {
+        <section>
+          <h3>Shape</h3>
+          <label class="field-label" for="shape-type">Type</label>
+          <select id="shape-type" [ngModel]="settings.shape" (ngModelChange)="update('shape', $event)">
+            @for (shape of shapes; track shape) { <option [value]="shape">{{ shape }}</option> }
+          </select>
+          <label class="field-label">Fill color</label>
+          <div class="swatches">
+            @for (color of colors; track color) {
+              <button type="button" class="swatch" [class.selected]="settings.color === color" [style.background]="color" [attr.aria-label]="'Use color ' + color" (click)="update('color', color)"></button>
+            }
+          </div>
+          <button class="action-button dark" type="button" (click)="run('add-shape')">Add shape</button>
+        </section>
+      }
+      @case ('text') {
+        <section>
+          <h3>Text</h3>
+          <label class="field-label" for="text-value">Content</label>
+          <input id="text-value" type="text" [ngModel]="settings.text" (ngModelChange)="update('text', $event)" />
+          <div class="slider-heading"><label>Font size</label><output>{{ settings.fontSize }} px</output></div>
+          <mat-slider min="12" max="120" step="1" discrete>
+            <input matSliderThumb [ngModel]="settings.fontSize" (ngModelChange)="update('fontSize', $event)" />
+          </mat-slider>
+          <button class="action-button dark" type="button" (click)="run('add-text')">Add text</button>
+        </section>
+      }
+      @case ('filter') {
+        <section>
+          <h3>Filter</h3>
+          <div class="filter-list">
+            @for (filter of filters; track filter) {
+              <button type="button" [class.selected]="settings.filter === filter" (click)="update('filter', filter); run('apply-filter')">
+                <span [class]="'filter-preview ' + filter.toLowerCase()"></span>{{ filter }}
+              </button>
+            }
+          </div>
+          <button class="action-button" type="button" (click)="run('remove-filter')">Remove active filter</button>
+        </section>
+      }
+      @default {
+        <section>
+          <h3>Artwork</h3>
+          <p class="hint">Choose a tool to begin editing, or upload your own image.</p>
+          <div class="canvas-meta"><span>Format</span><strong>PNG</strong></div>
+          <div class="canvas-meta"><span>Color mode</span><strong>RGB</strong></div>
+        </section>
+      }
+    }
+
+    <section class="object-actions">
+      <h3>Selection</h3>
+      <button class="action-button danger" type="button" (click)="run('delete')"><lucide-icon name="trash-2" [size]="17" /> Delete selected</button>
+    </section>
+  </div>
+</aside>

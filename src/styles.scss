@@ -1,0 +1,128 @@
+@use '@angular/material' as mat;
+
+@import 'tui-image-editor/dist/tui-image-editor.css';
+@import 'tui-color-picker/dist/tui-color-picker.css';
+@include mat.core();
+
+$creaition-material-theme: mat.define-theme((
+  color: (
+    theme-type: light,
+    primary: mat.$azure-palette,
+  ),
+  typography: (
+    plain-family: ('strokeWeight', 'Eina03', Arial, sans-serif),
+    brand-family: ('strokeWeight', 'Eina03', Arial, sans-serif),
+    regular-weight: 60,
+    medium-weight: 80,
+    bold-weight: 120,
+  ),
+  density: (
+    scale: 0,
+  ),
+));
+
+html {
+  @include mat.all-component-themes($creaition-material-theme);
+}
+
+@font-face {
+  font-family: 'strokeWeight';
+  src: local('strokeWeight');
+  font-style: oblique 0deg 12deg;
+  font-weight: 60 120;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'Eina03';
+  src: local('Eina03-Regular');
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+}
+:root {
+  --color-black: #000000;
+  --color-white: #ffffff;
+  --color-gray-1: #efefee;
+  --color-gray-2: #bebebe;
+  --color-bg: #f0f0f0;
+  --font-brand: 'strokeWeight', 'Eina03', Arial, sans-serif;
+  --font-weight-regular: 60;
+  --font-weight-medium: 80;
+  --font-weight-semibold: 120;
+  --font-slant-regular: 0;
+  --font-slant-hover: 12;
+  --radius-button: 50px;
+  --radius-input: 0;
+  --radius-card: 1rem;
+  --button-min-height: 35px;
+  --input-height: 50px;
+  background: var(--color-bg);
+  color: var(--color-black);
+  font-family: var(--font-brand);
+  font-synthesis: none;
+}
+* { box-sizing: border-box; letter-spacing: 0; }
+html, body { height: 100%; margin: 0; overflow: hidden; }
+body, button, input, select, textarea {
+  color: var(--color-black);
+  font-family: inherit;
+  font-variation-settings: 'wght' var(--font-weight-regular), 'slnt' var(--font-slant-regular);
+}
+button {
+  border-radius: var(--radius-button);
+  min-height: var(--button-min-height);
+}
+button:hover {
+  font-variation-settings: 'wght' var(--font-weight-medium), 'slnt' var(--font-slant-hover);
+}
+input, select, textarea {
+  border-radius: var(--radius-input);
+  min-height: var(--input-height);
+}
+button:focus-visible, input:focus-visible, select:focus-visible { outline: 2px solid var(--color-black); outline-offset: 2px; }
+.mat-mdc-slider {
+  --mdc-slider-active-track-color: var(--color-black);
+  --mdc-slider-inactive-track-color: var(--color-gray-2);
+  --mdc-slider-handle-color: var(--color-black);
+  --mdc-slider-focus-handle-color: var(--color-black);
+  --mdc-slider-hover-handle-color: var(--color-black);
+  --mdc-slider-label-container-color: var(--color-black);
+}
+.mat-mdc-snack-bar-container {
+  --mdc-snackbar-container-color: var(--color-black);
+  --mdc-snackbar-supporting-text-color: var(--color-white);
+  --mat-snack-bar-button-color: var(--color-white);
+}
+.mat-mdc-tooltip .mdc-tooltip__surface {
+  background: var(--color-black) !important;
+  border-radius: var(--radius-button) !important;
+  color: var(--color-white) !important;
+  font-size: 11px !important;
+  padding: 5px 8px !important;
+}
+
+.tui-image-editor-container,
+.tui-image-editor-container * {
+  font-family: var(--font-brand) !important;
+  font-variation-settings: 'wght' var(--font-weight-regular), 'slnt' var(--font-slant-regular);
+}
+.tui-image-editor-container {
+  background: var(--color-bg) !important;
+  color: var(--color-black) !important;
+}
+.tui-image-editor-container button,
+.tui-image-editor-container .tui-image-editor-button,
+.tui-image-editor-container .tui-image-editor-menu > .tui-image-editor-item {
+  border-radius: var(--radius-button) !important;
+  min-height: var(--button-min-height);
+}
+.tui-image-editor-container button:hover,
+.tui-image-editor-container .tui-image-editor-button:hover,
+.tui-image-editor-container .tui-image-editor-menu > .tui-image-editor-item:hover {
+  font-variation-settings: 'wght' var(--font-weight-medium), 'slnt' var(--font-slant-hover);
+}
+.tui-image-editor-container input,
+.tui-image-editor-container select {
+  border-radius: var(--radius-input) !important;
+  min-height: var(--input-height);
+}

@@ -1,0 +1,167 @@
+@if (state$ | async; as state) {
+  <aside class="ai-panel" [class.mobile-collapsed]="mobileCollapsed" aria-label="AI image generation">
+    <div class="panel-header">
+      <div>
+        <p class="eyebrow">AI Studio</p>
+        <h2>Qwen Edit</h2>
+      </div>
+      <div class="panel-actions">
+        <div class="quota" [class.exhausted]="state.quota.exhausted">
+          {{ state.quota.used }} / {{ state.quota.monthlyLimit }}
+        </div>
+        <button
+          class="mobile-toggle"
+          type="button"
+          [attr.aria-label]="mobileCollapsed ? 'Open AI panel' : 'Close AI panel'"
+          (click)="mobileCollapsed = !mobileCollapsed"
+        >{{ mobileCollapsed ? '+' : '−' }}</button>
+      </div>
+    </div>
+
+    <div class="panel-content">
+      <section>
+        <label class="field-label" for="hf-token">Hugging Face token</label>
+        <input
+          id="hf-token"
+          type="password"
+          autocomplete="off"
+          [ngModel]="state.preferences.apiToken"
+          (ngModelChange)="ai.updateToken($event)"
+          placeholder="Bearer token"
+        />
+      </section>
+
+      <section>
+        <div class="field-grid">
+          <label>
+            <span>Model</span>
+            <select [ngModel]="state.preferences.activeModelId" (ngModelChange)="onModelChange($event)">
+              @for (model of state.models; track model.id) {
+                <option [value]="model.id">{{ model.label }}</option>
+              }
+            </select>
+          </label>
+          <label>
+            <span>Mode</span>
+            <select [ngModel]="state.preferences.mode" (ngModelChange)="onModeChange($event)">
+              @for (mode of modelModes(state); track mode) {
+                <option [value]="mode">{{ modeLabel(mode) }}</option>
+              }
+            </select>
+          </label>
+        </div>
+      </section>
+
+      <section>
+        <label class="field-label" for="ai-prompt">Prompt</label>
+        <textarea
+          id="ai-prompt"
+          rows="4"
+          [ngModel]="state.prompt"
+          (ngModelChange)="ai.updatePrompt($event)"
+          placeholder="描述你希望如何修改当前图片"
+        ></textarea>
+        <div class="suggestions" aria-label="Prompt suggestions">
+          @for (suggestion of state.suggestions; track suggestion) {
+            <button type="button" (click)="useSuggestion(state, suggestion)">{{ suggestion }}</button>
+          }
+        </div>
+      </section>
+
+      <section>
+        <label class="field-label" for="negative-prompt">Negative prompt</label>
+        <input
+          id="negative-prompt"
+          type="text"
+          [ngModel]="state.negativePrompt"
+          (ngModelChange)="ai.updateNegativePrompt($event)"
+        />
+      </section>
+
+      <section>
+        <div class="param-row">
+          <label>Size</label>
+          <div class="inline-inputs">
+            <input type="number" min="256" max="1536" step="64" [ngModel]="parameters(state).width" (ngModelChange)="ai.updateParameters({ width: +$event })" />
+            <span>x</span>
+            <input type="number" min="256" max="1536" step="64" [ngModel]="parameters(state).height" (ngModelChange)="ai.updateParameters({ height: +$event })" />
+          </div>
+        </div>
+        <div class="param-row">
+          <label>Steps</label>
+          <input type="number" min="8" max="80" step="1" [ngModel]="parameters(state).steps" (ngModelChange)="ai.updateParameters({ steps: +$event })" />
+        </div>
+        <div class="param-row">
+          <label>Batch</label>
+          <input type="number" min="1" max="4" step="1" [ngModel]="parameters(state).batchSize" (ngModelChange)="ai.updateParameters({ batchSize: +$event })" />
+        </div>
+      </section>
+
+      <section>
+        <button class="action-button" type="button" (click)="captureCanvasSource.emit()">
+          Use canvas as source
+        </button>
+        @if (state.sourceImageDataUrl) {
+          <div class="source-ready">
+            <img [src]="state.sourceImageDataUrl" alt="Current AI source" />
+            <span>Canvas source ready for Qwen</span>
+          </div>
+        }
+      </section>
+
+      @if (state.error) {
+        <div class="error-box">
+          <span>{{ state.error }}</span>
+          <button type="button" (click)="ai.clearError()">Dismiss</button>
+        </div>
+      }
+
+      <button class="generate-button" type="button" [disabled]="state.loading || state.quota.exhausted" (click)="generate()">
+        {{ state.loading ? 'Editing' : 'Edit image' }}
+      </button>
+
+      @if (state.loading || state.progress > 0) {
+        <div class="progress-meta">
+          <span>{{ state.progressLabel }}</span>
+          <span>{{ state.progress }}%</span>
+        </div>
+        <div class="progress-track" aria-label="Generation progress">
+          <span [style.width.%]="state.progress"></span>
+        </div>
+      }
+
+      <section>
+        <div class="section-heading">
+          <h3>Results</h3>
+          <span>{{ state.images.length }}</span>
+        </div>
+        <div class="image-grid">
+          @for (image of state.images; track image.id) {
+            <article class="image-card">
+              <img [src]="image.dataUrl" [alt]="image.prompt" />
+              <div class="image-actions">
+                <button type="button" (click)="importImage.emit(image)">Import</button>
+                <button type="button" (click)="ai.toggleFavorite(image.id)">{{ image.favorite ? 'Saved' : 'Save' }}</button>
+              </div>
+            </article>
+          }
+        </div>
+      </section>
+
+      <section>
+        <div class="section-heading">
+          <h3>Favorites</h3>
+          <span>{{ state.favorites.length }}</span>
+        </div>
+        <div class="history-list">
+          @for (image of state.favorites.slice(0, 4); track image.id) {
+            <button type="button" (click)="importImage.emit(image)">
+              <img [src]="image.dataUrl" [alt]="image.prompt" />
+              <span>{{ image.prompt }}</span>
+            </button>
+          }
+        </div>
+      </section>
+    </div>
+  </aside>
+}

@@ -1,0 +1,48 @@
+<header class="topbar">
+  <div class="brand" aria-label="Creaition image editor">
+    <span class="brand-mark">C</span>
+    <span class="brand-name">CREAI<span>TION</span></span>
+  </div>
+
+  <div class="document-name"><span class="status-dot"></span>Untitled artwork</div>
+
+  <div class="top-actions">
+    <button class="icon-button mobile-menu" type="button" aria-label="Tools" matTooltip="Tools" (click)="toggleMobile.emit()">
+      <lucide-icon name="menu" [size]="19" />
+    </button>
+    <button class="icon-button" type="button" aria-label="Undo" matTooltip="Undo" (click)="undo.emit()">
+      <lucide-icon name="undo-2" [size]="18" />
+    </button>
+    <button class="icon-button" type="button" aria-label="Redo" matTooltip="Redo" (click)="redo.emit()">
+      <lucide-icon name="redo-2" [size]="18" />
+    </button>
+    <button class="icon-button panel-toggle" type="button" aria-label="Properties" matTooltip="Properties" [class.active]="panelOpen" (click)="togglePanel.emit()">
+      <lucide-icon name="panel-right" [size]="18" />
+    </button>
+    <button class="pill-button secondary upload-button" type="button" (click)="upload.emit()">
+      <lucide-icon name="upload" [size]="17" /><span>Upload</span>
+    </button>
+    <button class="pill-button primary" type="button" (click)="exportImage.emit()">
+      <lucide-icon name="download" [size]="17" /><span>Export</span>
+    </button>
+  </div>
+</header>
+
+<nav class="toolrail" [class.mobile-expanded]="mobileExpanded" aria-label="Editor tools">
+  <button class="tool-button upload-compact" type="button" matTooltip="Upload image" (click)="upload.emit()">
+    <lucide-icon name="image-plus" [size]="20" /><span>Upload</span>
+  </button>
+  <div class="rail-divider"></div>
+  @for (tool of tools; track tool.id) {
+    <button
+      class="tool-button"
+      type="button"
+      [class.active]="activeTool === tool.id"
+      [attr.aria-pressed]="activeTool === tool.id"
+      [matTooltip]="tool.label"
+      (click)="toolChange.emit(tool.id)"
+    >
+      <lucide-icon [name]="tool.icon" [size]="20" /><span>{{ tool.label }}</span>
+    </button>
+  }
+</nav>

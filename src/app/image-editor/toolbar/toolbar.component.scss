@@ -1,0 +1,115 @@
+:host { display: contents; }
+
+.topbar {
+  align-items: center;
+  background: var(--color-white);
+  border-bottom: 1px solid var(--color-gray-1);
+  display: grid;
+  grid-template-columns: 210px 1fr auto;
+  height: 68px;
+  padding: 0 18px;
+  position: relative;
+  z-index: 20;
+}
+
+.brand { align-items: center; display: flex; gap: 10px; min-width: 0; }
+.brand-mark {
+  align-items: center;
+  background: var(--color-black);
+  border-radius: 50%;
+  color: var(--color-white);
+  display: flex;
+  font-size: 13px;
+  font-variation-settings: 'wght' var(--font-weight-semibold), 'slnt' var(--font-slant-regular);
+  height: 30px;
+  justify-content: center;
+  width: 30px;
+}
+.brand-name { font-size: 15px; font-variation-settings: 'wght' var(--font-weight-semibold), 'slnt' var(--font-slant-regular); white-space: nowrap; }
+.brand-name span { font-variation-settings: 'wght' var(--font-weight-regular), 'slnt' var(--font-slant-regular); }
+
+.document-name {
+  align-items: center;
+  color: var(--color-black);
+  display: flex;
+  font-size: 13px;
+  gap: 8px;
+  justify-self: center;
+}
+.status-dot { background: var(--color-gray-2); border-radius: 50%; height: 6px; width: 6px; }
+.top-actions { align-items: center; display: flex; gap: 8px; }
+
+.icon-button, .pill-button, .tool-button {
+  align-items: center;
+  border: 1px solid transparent;
+  cursor: pointer;
+  display: inline-flex;
+  font: inherit;
+  justify-content: center;
+  min-height: var(--button-min-height);
+  transition: background-color 160ms ease, color 160ms ease, font-variation-settings 160ms ease;
+}
+.icon-button { background: transparent; border-radius: var(--radius-button); height: 38px; width: 38px; }
+.icon-button:hover, .icon-button.active { background: var(--color-gray-1); font-variation-settings: 'wght' var(--font-weight-medium), 'slnt' var(--font-slant-hover); }
+.pill-button { border-radius: var(--radius-button); gap: 8px; height: 38px; padding: 0 17px; }
+.pill-button.primary { background: var(--color-black); color: var(--color-white); }
+.pill-button.secondary { background: var(--color-white); border-color: var(--color-black); color: var(--color-black); }
+.pill-button:hover { font-variation-settings: 'wght' var(--font-weight-medium), 'slnt' var(--font-slant-hover); }
+
+.toolrail {
+  align-items: center;
+  background: var(--color-white);
+  border-right: 1px solid var(--color-gray-1);
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  grid-area: rail;
+  padding: 14px 10px;
+  position: relative;
+  z-index: 15;
+}
+.tool-button {
+  background: transparent;
+  border-radius: var(--radius-button);
+  color: var(--color-black);
+  flex-direction: column;
+  font-size: 10px;
+  font-variation-settings: 'wght' var(--font-weight-regular), 'slnt' var(--font-slant-regular);
+  gap: 5px;
+  height: 58px;
+  width: 62px;
+}
+.tool-button:hover, .tool-button.active {
+  background: var(--color-black);
+  border-radius: var(--radius-button);
+  color: var(--color-white);
+  font-variation-settings: 'wght' var(--font-weight-medium), 'slnt' var(--font-slant-hover);
+}
+.rail-divider { background: var(--color-gray-1); height: 1px; margin: 2px 0; width: 42px; }
+.mobile-menu, .upload-compact { display: none; }
+
+@media (max-width: 767px) {
+  .topbar { grid-template-columns: 1fr auto; height: 60px; padding: 0 12px; }
+  .document-name, .panel-toggle, .upload-button, .brand-name { display: none; }
+  .mobile-menu { display: inline-flex; }
+  .pill-button { padding: 0 14px; }
+  .pill-button span { display: none; }
+  .toolrail {
+    border-bottom: 1px solid var(--color-gray-1);
+    border-right: 0;
+    box-shadow: 0 16px 28px rgba(0, 0, 0, 0.08);
+    display: none;
+    flex-direction: row;
+    gap: 4px;
+    left: 0;
+    overflow-x: auto;
+    padding: 8px 10px;
+    position: fixed;
+    right: 0;
+    top: 60px;
+  }
+  .toolrail.mobile-expanded { display: flex; }
+  .tool-button { flex: 0 0 58px; height: 52px; width: 58px; }
+  .upload-compact { display: inline-flex; }
+  .rail-divider { flex: 0 0 1px; height: 36px; margin: 8px 3px; width: 1px; }
+}

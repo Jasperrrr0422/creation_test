@@ -1,0 +1,43 @@
+<main class="editor-shell" [class.panel-closed]="!panelOpen">
+  <app-toolbar
+    [activeTool]="activeTool"
+    [mobileExpanded]="mobileToolbarOpen"
+    [panelOpen]="panelOpen"
+    (toolChange)="selectTool($event)"
+    (upload)="fileInput.click()"
+    (exportImage)="editor.exportImage()"
+    (undo)="run('undo')"
+    (redo)="run('redo')"
+    (toggleMobile)="mobileToolbarOpen = !mobileToolbarOpen"
+    (togglePanel)="panelOpen = !panelOpen"
+  />
+
+  <section class="canvas-stage" [class.busy]="busy">
+    <app-editor-canvas
+      [activeTool]="activeTool"
+      [settings]="settings"
+      (busyChange)="busy = $event"
+      (errorMessage)="showError($event)"
+    />
+    @if (!panelOpen) {
+      <button class="properties-fab" type="button" (click)="panelOpen = true">Properties</button>
+    }
+  </section>
+
+  <app-ai-panel
+    [sourceImageDataUrl]="aiSourceImageDataUrl"
+    (captureCanvasSource)="useCanvasAsAiSource()"
+    (importImage)="importAiImage($event)"
+  />
+
+  <app-properties-panel
+    [activeTool]="activeTool"
+    [settings]="settings"
+    [open]="panelOpen"
+    (settingsChange)="settings = $event"
+    (command)="editor.execute($event)"
+    (close)="panelOpen = false"
+  />
+
+  <input #fileInput class="visually-hidden" type="file" accept="image/png,image/jpeg,image/webp" (change)="onFileSelected($event)" />
+</main>

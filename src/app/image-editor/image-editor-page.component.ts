@@ -1,0 +1,66 @@
+import { Component, ViewChild } from '@angular/core';
+import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
+import { EditorCanvasComponent } from './editor-canvas/editor-canvas.component';
+import { EditorCommand, EditorSettings, EditorTool } from './core/editor.types';
+import { PropertiesPanelComponent } from './properties-panel/properties-panel.component';
+import { ToolbarComponent } from './toolbar/toolbar.component';
+import { creaitionTokens } from './core/creaition.theme';
+import { AiPanelComponent } from './ai/ai-panel/ai-panel.component';
+import { AiGeneratedImage } from './ai/core/ai-image.types';
+
+@Component({
+  selector: 'app-image-editor-page',
+  standalone: true,
+  imports: [AiPanelComponent, EditorCanvasComponent, MatSnackBarModule, PropertiesPanelComponent, ToolbarComponent],
+  templateUrl: './image-editor-page.component.html',
+  styleUrl: './image-editor-page.component.scss',
+})
+export class ImageEditorPageComponent {
+  @ViewChild(EditorCanvasComponent) editor!: EditorCanvasComponent;
+
+  activeTool: EditorTool = 'select';
+  settings: EditorSettings = {
+    color: creaitionTokens.black,
+    strokeWidth: 8,
+    shape: 'rect',
+    fontSize: 48,
+    text: 'New idea',
+    filter: 'Grayscale',
+  };
+  panelOpen = window.innerWidth >= 1280;
+  mobileToolbarOpen = false;
+  busy = false;
+  aiSourceImageDataUrl: string | null = null;
+
+  constructor(private readonly snackBar: MatSnackBar) {}
+
+  selectTool(tool: EditorTool): void {
+    this.activeTool = tool;
+    this.panelOpen = true;
+    this.mobileToolbarOpen = false;
+  }
+
+  onFileSelected(event: Event): void {
+    const input = event.target as HTMLInputElement;
+    const file = input.files?.[0];
+    if (file) this.editor.loadFile(file);
+    input.value = '';
+  }
+
+  run(command: EditorCommand['type']): void {
+    this.editor.execute({ type: command });
+  }
+
+  importAiImage(image: AiGeneratedImage): void {
+    this.editor.loadDataUrl(image.dataUrl, `AI ${image.modelId}`);
+  }
+
+  useCanvasAsAiSource(): void {
+    this.aiSourceImageDataUrl = this.editor.getDataUrl();
+    this.showError(this.aiSourceImageDataUrl ? 'Canvas source captured for AI.' : 'Canvas is not ready yet.');
+  }
+
+  showError(message: string): void {
+    this.snackBar.open(message, 'Close', { duration: 4200 });
+  }
+}
