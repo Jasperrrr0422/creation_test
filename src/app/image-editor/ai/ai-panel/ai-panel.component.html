@@ -18,7 +18,7 @@
       </div>
     </div>
 
-    <div class="panel-content">
+    <div class="panel-content" (keydown)="$event.stopPropagation()">
       <section>
         <div class="field-grid">
           <label>
@@ -49,7 +49,7 @@
             [ngModel]="state.prompt"
             (focus)="autocompleteOpen = true"
             (blur)="autocompleteOpen = false"
-            (keydown)="onPromptKeydown($event, state)"
+            (keydown)="onPromptKeydown($event, state); $event.stopPropagation()"
             (ngModelChange)="updatePrompt($event)"
             placeholder="Describe how you want to edit the selected image"
           ></textarea>
