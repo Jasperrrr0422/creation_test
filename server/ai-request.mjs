@@ -1,6 +1,6 @@
 const modeInstructions = {
-  'image-to-image': 'Preserve the main subject and composition unless the user explicitly asks otherwise.',
-  inpaint: 'Only change the object or area described by the user. Keep every other area unchanged.',
+  'image-to-image': 'Preserve the complete image frame, dimensions, composition, typography, and all unmentioned pixels. Do not crop, zoom, shift, resize, reframe, or move edge content. Only apply the requested change.',
+  inpaint: 'Only change the object or area described by the user. Keep every other pixel, the complete frame, and all typography unchanged. Do not crop or reframe.',
   'style-transfer': 'Apply the requested visual style while preserving subject identity and composition.',
   upscale: 'Improve clarity, edge detail, and texture. Do not add or remove content.',
 };
@@ -30,7 +30,7 @@ export async function generateQwenImage(payload) {
         prompt: `${instruction}\nUser request: ${payload.prompt}`,
         num_inference_steps: clamp(parameters.steps, 8, 80, 50),
         guidance_scale: clamp(parameters.guidanceScale, 1, 20, 4),
-        image_size: {
+        target_size: {
           width: clamp(parameters.width, 256, 1536, 1024),
           height: clamp(parameters.height, 256, 1536, 1024),
         },

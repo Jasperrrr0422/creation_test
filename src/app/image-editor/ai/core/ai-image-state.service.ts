@@ -73,6 +73,7 @@ export class AiImageStateService {
   readonly state$: Observable<AiImageState>;
   private progressTimer?: ReturnType<typeof setInterval>;
   private requestTimestamps: number[] = [];
+  private sourceSizingVersion = 0;
 
   constructor(
     private readonly api: AiImageApiService,
@@ -106,6 +107,7 @@ export class AiImageStateService {
       preferences: { ...this.snapshot.preferences, activeModelId: model.id, mode },
     });
     this.persistPreferences();
+    if (this.snapshot.sourceImageDataUrl) this.syncSizeToSource(this.snapshot.sourceImageDataUrl);
   }
 
   selectMode(mode: AiGenerationMode): void {
@@ -135,6 +137,27 @@ export class AiImageStateService {
 
   setSourceImage(dataUrl: string | null): void {
     this.patch({ sourceImageDataUrl: dataUrl });
+    if (dataUrl) this.syncSizeToSource(dataUrl);
+  }
+
+  private syncSizeToSource(dataUrl: string): void {
+    const sizingVersion = ++this.sourceSizingVersion;
+    const image = new Image();
+    image.onload = () => {
+      if (sizingVersion !== this.sourceSizingVersion || this.snapshot.sourceImageDataUrl !== dataUrl) return;
+      const preferences = this.snapshot.preferences;
+      const current = preferences.parametersByModel[preferences.activeModelId];
+      const maximumEdge = Math.min(1536, Math.max(256, current.width, current.height));
+      const aspectRatio = image.naturalWidth / Math.max(1, image.naturalHeight);
+      const width = aspectRatio >= 1 ? maximumEdge : this.roundImageSize(maximumEdge * aspectRatio);
+      const height = aspectRatio >= 1 ? this.roundImageSize(maximumEdge / aspectRatio) : maximumEdge;
+      this.updateParameters({ width, height });
+    };
+    image.src = dataUrl;
+  }
+
+  private roundImageSize(value: number): number {
+    return Math.min(1536, Math.max(256, Math.round(value / 8) * 8));
   }
 
   toggleFavorite(imageId: string): void {

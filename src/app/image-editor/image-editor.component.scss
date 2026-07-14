@@ -105,4 +105,9 @@
 
 @media (max-width: 767px) {
   :host ::ng-deep app-properties-panel .panel.open { width: 100%; }
+  .properties-fab {
+    bottom: auto;
+    right: 12px;
+    top: 12px;
+  }
 }

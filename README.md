@@ -15,7 +15,8 @@
 - `ImageEditorComponent`、`ToolbarComponent`、`PropertiesPanelComponent` 和 `EditorCanvasComponent` 分层封装
 - TUI Image Editor 3.15.0 负责裁剪、旋转、翻转、绘制、形状、文字、滤镜、撤销、重做和导出
 - 图片以独立白色卡片加入同一个大画布，可选择、移动、缩放和删除
-- 画布支持按钮缩放、滚轮缩放、`Space + 拖动`平移和适应视口
+- 画布支持按钮缩放、滚轮缩放、移动端双指捏合、`Space + 拖动`平移和适应视口
+- 上传图和 AI 图通过 IndexedDB 保存，刷新后恢复图片、位置、缩放和旋转
 - 属性面板关闭后画布自动占满释放区域
 - 采用 Creaition 黑、白、两级灰色及页面背景色，无额外品牌色
 - 按钮圆角 50px、输入框圆角 0、卡片圆角 1rem，按钮最小高度 35px、输入框高度 50px
@@ -29,6 +30,7 @@
 - Qwen Image Edit、Qwen Image Edit 2509 和 Qwen Image Edit 2511 快速切换
 - 每个模型的尺寸、步数、引导强度、变化强度和批量数独立保存
 - 选中任意画布白卡后，自动将卡内原图设为当前图生图来源
+- 输出尺寸会自动跟随选中原图宽高比，减少图生图时的裁切和重新构图
 - AI 结果生成成功后自动加入同一画布，也可从结果或收藏中再次添加
 - 图片编辑、指令式局部修改、风格迁移和画质增强模式
 - 按模式提供提示词推荐和补全
@@ -102,14 +104,15 @@ AI_PROXY=http://127.0.0.1:<HTTP代理端口> npm start
 
 ## 状态、存储与数据库
 
-项目当前没有数据库。`AiImageStateService` 使用 RxJS `BehaviorSubject` 管理全局 AI 状态：
+项目使用浏览器 IndexedDB 作为本地画布数据库，并使用 RxJS `BehaviorSubject` 管理全局 AI 状态：
 
+- 画布图片、位置、缩放和旋转：IndexedDB，刷新后自动恢复
 - 用户偏好和各模型参数：`localStorage`
 - Token：`sessionStorage`
 - 图片历史和收藏：`localStorage`，最多 12 条
 - 月度保护计数：`localStorage`，按月自动重置
 
-浏览器中的 1000 次计数不是 Hugging Face 真实余额。供应商额度耗尽时接口返回 402，应用会标记本地配额耗尽。正式产品应将历史图片迁移到对象存储，并在数据库记录用户、任务和真实配额。
+IndexedDB 数据保存在当前浏览器中；刷新和重新打开页面不会消失，但清除网站数据或更换设备后不会同步。浏览器中的 1000 次计数也不是 Hugging Face 真实余额。正式多用户产品应增加登录系统，将图片迁移到云端对象存储，并在服务端数据库记录画布、任务和真实配额。
 
 ## 部署到 Vercel
 

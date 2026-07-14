@@ -4,6 +4,7 @@ import {
 } from '@angular/core';
 import { LucideAngularModule } from 'lucide-angular';
 import type ImageEditorType from 'tui-image-editor';
+import { ArtworkStorageService, StoredCanvasCard } from '../core/artwork-storage.service';
 import { EditorCommand, EditorSettings, EditorTool } from '../core/editor.types';
 import { applyCreaitionEditorTheme, creaitionTokens, creaitionEditorTheme } from '../core/creaition.theme';
 
@@ -51,14 +52,18 @@ export class EditorCanvasComponent implements AfterViewInit, OnChanges, OnDestro
   @Input({ required: true }) settings!: EditorSettings;
   @Output() busyChange = new EventEmitter<boolean>();
   @Output() errorMessage = new EventEmitter<string>();
-  @Output() sourceImageChange = new EventEmitter<string>();
+  @Output() sourceImageChange = new EventEmitter<string | null>();
 
   private editor?: ImageEditorType;
   private resizeObserver?: ResizeObserver;
   private readonly brandFont = creaitionTokens.fontFamily;
   private readonly imageSources = new Map<number, string>();
+  private readonly storedCards = new Map<number, Pick<StoredCanvasCard, 'key' | 'dataUrl' | 'label' | 'createdAt'>>();
+  private readonly persistenceTimers = new Map<number, ReturnType<typeof setTimeout>>();
+  private storageErrorShown = false;
   private activeSourceImageDataUrl: string | null = null;
   private activeSourceObjectId: number | null = null;
+  private activeObjectId: number | null = null;
   private cardImportQueue: Promise<void> = Promise.resolve();
   private cardCount = 0;
   private viewZoom = 1;
@@ -70,6 +75,11 @@ export class EditorCanvasComponent implements AfterViewInit, OnChanges, OnDestro
   private panStartY = 0;
   private panOriginX = 0;
   private panOriginY = 0;
+  private readonly touchPoints = new Map<number, { x: number; y: number }>();
+  private pinchStartDistance = 0;
+  private pinchStartZoom = 1;
+  private pinchWorldX = 0;
+  private pinchWorldY = 0;
   private workspaceWidth = 0;
   private workspaceHeight = 0;
   private readonly workspaceDensity = 2.4;
@@ -80,7 +90,10 @@ export class EditorCanvasComponent implements AfterViewInit, OnChanges, OnDestro
     return Math.round(this.viewZoom * 100);
   }
 
-  constructor(private readonly zone: NgZone) {}
+  constructor(
+    private readonly zone: NgZone,
+    private readonly artworkStorage: ArtworkStorageService,
+  ) {}
 
   ngAfterViewInit(): void {
     const ImageEditor = window.tui.ImageEditor;
@@ -102,8 +115,12 @@ export class EditorCanvasComponent implements AfterViewInit, OnChanges, OnDestro
     });
     this.editor.on('objectActivated', (object: { id?: number }) => {
       const id = Number(object.id);
+      this.activeObjectId = Number.isFinite(id) ? id : null;
       const source = this.imageSources.get(id);
       if (source) this.selectSourceImage(source, id);
+    });
+    ['objectMoved', 'objectScaled', 'objectRotated'].forEach((eventName) => {
+      this.editor?.on(eventName, (object: { id?: number }) => this.scheduleCardPersistence(Number(object.id)));
     });
 
     this.loadStarterArtwork();
@@ -119,6 +136,7 @@ export class EditorCanvasComponent implements AfterViewInit, OnChanges, OnDestro
 
   ngOnDestroy(): void {
     this.resizeObserver?.disconnect();
+    this.persistenceTimers.forEach((timer) => clearTimeout(timer));
     this.editor?.destroy();
   }
 
@@ -157,6 +175,10 @@ export class EditorCanvasComponent implements AfterViewInit, OnChanges, OnDestro
   }
 
   startPan(event: PointerEvent): void {
+    if (event.pointerType === 'touch') {
+      this.startTouchGesture(event);
+      return;
+    }
     if (!(this.spacePressed || event.button === 1)) return;
     event.preventDefault();
     this.panPointerId = event.pointerId;
@@ -170,6 +192,10 @@ export class EditorCanvasComponent implements AfterViewInit, OnChanges, OnDestro
   }
 
   movePan(event: PointerEvent): void {
+    if (event.pointerType === 'touch') {
+      this.moveTouchGesture(event);
+      return;
+    }
     if (!this.panning || event.pointerId !== this.panPointerId) return;
     const displayScale = this.logicalPixelsPerScreenPixel();
     this.panX = this.panOriginX + (event.clientX - this.panStartX) * displayScale;
@@ -178,6 +204,10 @@ export class EditorCanvasComponent implements AfterViewInit, OnChanges, OnDestro
   }
 
   endPan(event: PointerEvent): void {
+    if (event.pointerType === 'touch') {
+      this.endTouchGesture(event);
+      return;
+    }
     if (event.pointerId !== this.panPointerId) return;
     this.finishPanning();
   }
@@ -232,7 +262,7 @@ export class EditorCanvasComponent implements AfterViewInit, OnChanges, OnDestro
     const actions: Record<EditorCommand['type'], () => void | Promise<unknown>> = {
       undo: () => this.editor!.undo(),
       redo: () => this.editor!.redo(),
-      delete: () => this.editor!.removeActiveObject(),
+      delete: () => this.deleteActiveObject(),
       'rotate-left': () => this.editor!.rotate(-90),
       'rotate-right': () => this.editor!.rotate(90),
       'flip-x': () => this.editor!.flipX(),
@@ -349,15 +379,32 @@ export class EditorCanvasComponent implements AfterViewInit, OnChanges, OnDestro
 
     try {
       await this.editor.loadImageFromURL(workspace.toDataURL('image/png'), 'Creaition workspace');
-      await this.addImageCard(canvas.toDataURL('image/png'), 'ORIGINAL / STARTER');
-      this.editor.clearUndoStack();
       this.fitCanvas();
+      await this.addImageCard(canvas.toDataURL('image/png'), 'ORIGINAL / STARTER', false, false);
+      let storedCards: StoredCanvasCard[] = [];
+      try {
+        storedCards = await this.artworkStorage.loadCards();
+      } catch {
+        this.storageErrorShown = true;
+        this.zone.run(() => this.errorMessage.emit('Saved artwork could not be restored in this browser.'));
+      }
+      for (const card of storedCards) {
+        await this.addImageCard(card.dataUrl, card.label, false, false, card);
+      }
+      this.editor.clearUndoStack();
+      this.fitView();
     } catch {
       this.zone.run(() => this.errorMessage.emit('The starter workspace could not be created.'));
     }
   }
 
-  private async addImageCard(dataUrl: string, label: string, placeNearSelection = false): Promise<void> {
+  private async addImageCard(
+    dataUrl: string,
+    label: string,
+    placeNearSelection = false,
+    persist = true,
+    restoredCard?: StoredCanvasCard,
+  ): Promise<void> {
     if (!this.editor) return;
     const cardDataUrl = await this.createCardDataUrl(dataUrl, label);
     const object = await this.editor.addImageObject(cardDataUrl) as unknown as {
@@ -367,26 +414,95 @@ export class EditorCanvasComponent implements AfterViewInit, OnChanges, OnDestro
     };
     const id = Number(object.id);
     if (!Number.isFinite(id)) throw new Error('The image card was created without a valid canvas object.');
-    const position = this.nextCardPosition(object, placeNearSelection);
-    await this.editor.setObjectPosition(id, {
-      x: position.x,
-      y: position.y,
-      originX: 'left',
-      originY: 'top',
-    });
+    if (restoredCard) {
+      await this.editor.setObjectProperties(id, {
+        left: restoredCard.xRatio * this.workspaceWidth,
+        top: restoredCard.yRatio * this.workspaceHeight,
+        scaleX: restoredCard.scaleX,
+        scaleY: restoredCard.scaleY,
+        angle: restoredCard.angle,
+      });
+    } else {
+      const position = this.nextCardPosition(object, placeNearSelection);
+      await this.editor.setObjectPosition(id, {
+        x: position.x,
+        y: position.y,
+        originX: 'left',
+        originY: 'top',
+      });
+    }
     this.imageSources.set(id, dataUrl);
+    if (persist || restoredCard) {
+      this.storedCards.set(id, {
+        key: restoredCard?.key ?? crypto.randomUUID(),
+        dataUrl,
+        label,
+        createdAt: restoredCard?.createdAt ?? new Date().toISOString(),
+      });
+    }
     this.selectSourceImage(dataUrl, id);
     this.cardCount += 1;
     const graphics = this.getGraphics();
     const fabricObject = graphics?.getObject(id);
     if (fabricObject) graphics?._canvas.setActiveObject(fabricObject);
     graphics?._canvas.requestRenderAll();
+    if (persist) await this.persistCard(id);
   }
 
   private selectSourceImage(dataUrl: string, objectId: number): void {
     this.activeSourceImageDataUrl = dataUrl;
     this.activeSourceObjectId = objectId;
     this.zone.run(() => this.sourceImageChange.emit(dataUrl));
+  }
+
+  private scheduleCardPersistence(objectId: number): void {
+    if (!Number.isFinite(objectId) || !this.storedCards.has(objectId)) return;
+    const existingTimer = this.persistenceTimers.get(objectId);
+    if (existingTimer) clearTimeout(existingTimer);
+    this.persistenceTimers.set(objectId, setTimeout(() => {
+      this.persistenceTimers.delete(objectId);
+      void this.persistCard(objectId);
+    }, 250));
+  }
+
+  private async persistCard(objectId: number): Promise<void> {
+    const metadata = this.storedCards.get(objectId);
+    const object = this.getGraphics()?.getObject(objectId);
+    if (!metadata || !object || !this.workspaceWidth || !this.workspaceHeight) return;
+    try {
+      await this.artworkStorage.saveCard({
+        ...metadata,
+        xRatio: Number(object.left || 0) / this.workspaceWidth,
+        yRatio: Number(object.top || 0) / this.workspaceHeight,
+        scaleX: Number(object.scaleX || 1),
+        scaleY: Number(object.scaleY || 1),
+        angle: Number(object.angle || 0),
+      });
+    } catch {
+      if (this.storageErrorShown) return;
+      this.storageErrorShown = true;
+      this.zone.run(() => this.errorMessage.emit('This browser could not save the artwork locally.'));
+    }
+  }
+
+  private async deleteActiveObject(): Promise<void> {
+    if (!this.editor) return;
+    const objectId = this.activeObjectId;
+    const storedCard = objectId === null ? undefined : this.storedCards.get(objectId);
+    this.editor.removeActiveObject();
+    if (objectId === null) return;
+    this.imageSources.delete(objectId);
+    this.storedCards.delete(objectId);
+    const timer = this.persistenceTimers.get(objectId);
+    if (timer) clearTimeout(timer);
+    this.persistenceTimers.delete(objectId);
+    this.activeObjectId = null;
+    if (this.activeSourceObjectId === objectId) {
+      this.activeSourceObjectId = null;
+      this.activeSourceImageDataUrl = null;
+      this.zone.run(() => this.sourceImageChange.emit(null));
+    }
+    if (storedCard) await this.artworkStorage.deleteCard(storedCard.key);
   }
 
   private nextCardPosition(
@@ -401,6 +517,13 @@ export class EditorCanvasComponent implements AfterViewInit, OnChanges, OnDestro
     const source = placeNearSelection && this.activeSourceObjectId !== null
       ? graphics?.getObject(this.activeSourceObjectId)
       : null;
+
+    if (this.cardCount === 0) {
+      return {
+        x: Math.max(margin, (this.workspaceWidth - cardWidth) / 2),
+        y: Math.max(margin, (this.workspaceHeight - cardHeight) / 2),
+      };
+    }
 
     if (source) {
       const rightTop = source.getPointByOrigin('right', 'top');
@@ -518,7 +641,7 @@ export class EditorCanvasComponent implements AfterViewInit, OnChanges, OnDestro
     const deltaX = nextWidth - currentWidth;
     const deltaY = nextHeight - currentHeight;
 
-    if (deltaX || deltaY) {
+    if (this.workspaceWidth > 0 && this.workspaceHeight > 0 && (deltaX || deltaY)) {
       fabricCanvas.getObjects().forEach((object) => {
         if (object === canvasImage) return;
         object.set({ left: Number(object.left || 0) + deltaX / 2, top: Number(object.top || 0) + deltaY / 2 });
@@ -551,7 +674,7 @@ export class EditorCanvasComponent implements AfterViewInit, OnChanges, OnDestro
   }
 
   private setViewZoom(nextZoom: number, clientX?: number, clientY?: number): void {
-    const clampedZoom = Math.min(3, Math.max(0.25, Math.round(nextZoom * 10) / 10));
+    const clampedZoom = Math.min(3, Math.max(0.1, Math.round(nextZoom * 10) / 10));
     if (clampedZoom === this.viewZoom) return;
     const viewportRect = this.viewport.nativeElement.getBoundingClientRect();
     const displayScale = this.logicalPixelsPerScreenPixel();
@@ -579,6 +702,7 @@ export class EditorCanvasComponent implements AfterViewInit, OnChanges, OnDestro
   private getGraphics(): {
     _canvas: {
       backgroundColor: string;
+      discardActiveObject(): void;
       getObjects(): Array<{ left?: number; top?: number; set(values: Record<string, unknown>): void; setCoords(): void }>;
       requestRenderAll(): void;
       setActiveObject(object: unknown): void;
@@ -593,6 +717,11 @@ export class EditorCanvasComponent implements AfterViewInit, OnChanges, OnDestro
     setCanvasBackstoreDimension(dimension: { width: number; height: number }): void;
     setCanvasCssDimension(dimension: { width: string; height: string }): void;
     getObject(id: number): {
+      angle?: number;
+      left?: number;
+      scaleX?: number;
+      scaleY?: number;
+      top?: number;
       getPointByOrigin(originX: string, originY: string): { x: number; y: number };
     } | null;
   } | null {
@@ -602,6 +731,63 @@ export class EditorCanvasComponent implements AfterViewInit, OnChanges, OnDestro
   private logicalPixelsPerScreenPixel(): number {
     const width = this.viewport.nativeElement.clientWidth;
     return width > 0 && this.workspaceWidth > 0 ? this.workspaceWidth / width : this.workspaceDensity;
+  }
+
+  private startTouchGesture(event: PointerEvent): void {
+    this.touchPoints.set(event.pointerId, { x: event.clientX, y: event.clientY });
+    if (this.touchPoints.size !== 2) return;
+
+    event.preventDefault();
+    const [first, second] = [...this.touchPoints.values()];
+    const midpoint = this.touchMidpoint(first, second);
+    const viewportRect = this.viewport.nativeElement.getBoundingClientRect();
+    const displayScale = this.logicalPixelsPerScreenPixel();
+    const logicalX = (midpoint.x - viewportRect.left) * displayScale;
+    const logicalY = (midpoint.y - viewportRect.top) * displayScale;
+    this.pinchStartDistance = Math.max(1, this.touchDistance(first, second));
+    this.pinchStartZoom = this.viewZoom;
+    this.pinchWorldX = (logicalX - this.panX) / this.viewZoom;
+    this.pinchWorldY = (logicalY - this.panY) / this.viewZoom;
+    this.autoFit = false;
+    this.panning = true;
+    this.getGraphics()?._canvas.discardActiveObject();
+  }
+
+  private moveTouchGesture(event: PointerEvent): void {
+    if (!this.touchPoints.has(event.pointerId)) return;
+    this.touchPoints.set(event.pointerId, { x: event.clientX, y: event.clientY });
+    if (this.touchPoints.size !== 2 || !this.pinchStartDistance) return;
+
+    event.preventDefault();
+    const [first, second] = [...this.touchPoints.values()];
+    const midpoint = this.touchMidpoint(first, second);
+    const viewportRect = this.viewport.nativeElement.getBoundingClientRect();
+    const displayScale = this.logicalPixelsPerScreenPixel();
+    const logicalX = (midpoint.x - viewportRect.left) * displayScale;
+    const logicalY = (midpoint.y - viewportRect.top) * displayScale;
+    const ratio = this.touchDistance(first, second) / this.pinchStartDistance;
+    this.viewZoom = Math.min(3, Math.max(0.1, this.pinchStartZoom * ratio));
+    this.panX = logicalX - this.pinchWorldX * this.viewZoom;
+    this.panY = logicalY - this.pinchWorldY * this.viewZoom;
+    this.applyViewTransform();
+  }
+
+  private endTouchGesture(event: PointerEvent): void {
+    this.touchPoints.delete(event.pointerId);
+    if (this.touchPoints.size >= 2) return;
+    this.pinchStartDistance = 0;
+    this.panning = false;
+  }
+
+  private touchDistance(first: { x: number; y: number }, second: { x: number; y: number }): number {
+    return Math.hypot(second.x - first.x, second.y - first.y);
+  }
+
+  private touchMidpoint(
+    first: { x: number; y: number },
+    second: { x: number; y: number },
+  ): { x: number; y: number } {
+    return { x: (first.x + second.x) / 2, y: (first.y + second.y) / 2 };
   }
 
   private finishPanning(): void {

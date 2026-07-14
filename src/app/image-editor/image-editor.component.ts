@@ -57,7 +57,7 @@ export class ImageEditorComponent {
     if (added) this.snackBar.open('AI image added next to the selected card.', 'Close', { duration: 2600 });
   }
 
-  selectAiSource(dataUrl: string): void {
+  selectAiSource(dataUrl: string | null): void {
     this.aiSourceImageDataUrl = dataUrl;
   }
 

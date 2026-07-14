@@ -72,9 +72,9 @@
         <div class="param-row">
           <label>Size</label>
           <div class="inline-inputs">
-            <input type="number" min="256" max="1536" step="64" [ngModel]="parameters(state).width" (ngModelChange)="ai.updateParameters({ width: +$event })" />
+            <input type="number" min="256" max="1536" step="8" [ngModel]="parameters(state).width" (ngModelChange)="ai.updateParameters({ width: +$event })" />
             <span>x</span>
-            <input type="number" min="256" max="1536" step="64" [ngModel]="parameters(state).height" (ngModelChange)="ai.updateParameters({ height: +$event })" />
+            <input type="number" min="256" max="1536" step="8" [ngModel]="parameters(state).height" (ngModelChange)="ai.updateParameters({ height: +$event })" />
           </div>
         </div>
         <div class="param-row">
