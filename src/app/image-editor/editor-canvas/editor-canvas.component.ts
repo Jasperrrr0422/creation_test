@@ -263,10 +263,10 @@ export class EditorCanvasComponent implements AfterViewInit, OnChanges, OnDestro
       undo: () => this.editor!.undo(),
       redo: () => this.editor!.redo(),
       delete: () => this.deleteActiveObject(),
-      'rotate-left': () => this.editor!.rotate(-90),
-      'rotate-right': () => this.editor!.rotate(90),
-      'flip-x': () => this.editor!.flipX(),
-      'flip-y': () => this.editor!.flipY(),
+      'rotate-left': () => this.rotateSelectedObject(-90),
+      'rotate-right': () => this.rotateSelectedObject(90),
+      'flip-x': () => this.flipSelectedObject('x'),
+      'flip-y': () => this.flipSelectedObject('y'),
       'apply-crop': () => this.applyCrop(),
       'add-shape': () => this.addShape(),
       'add-text': () => this.addText(),
@@ -421,6 +421,8 @@ export class EditorCanvasComponent implements AfterViewInit, OnChanges, OnDestro
         scaleX: restoredCard.scaleX,
         scaleY: restoredCard.scaleY,
         angle: restoredCard.angle,
+        flipX: !!restoredCard.flipX,
+        flipY: !!restoredCard.flipY,
       });
     } else {
       const position = this.nextCardPosition(object, placeNearSelection);
@@ -477,6 +479,8 @@ export class EditorCanvasComponent implements AfterViewInit, OnChanges, OnDestro
         scaleX: Number(object.scaleX || 1),
         scaleY: Number(object.scaleY || 1),
         angle: Number(object.angle || 0),
+        flipX: !!object.flipX,
+        flipY: !!object.flipY,
       });
     } catch {
       if (this.storageErrorShown) return;
@@ -503,6 +507,35 @@ export class EditorCanvasComponent implements AfterViewInit, OnChanges, OnDestro
       this.zone.run(() => this.sourceImageChange.emit(null));
     }
     if (storedCard) await this.artworkStorage.deleteCard(storedCard.key);
+  }
+
+  private rotateSelectedObject(delta: number): void | Promise<unknown> {
+    const object = this.getActiveFabricObject();
+    if (!object) return this.editor!.rotate(delta);
+    object.set({ angle: Number(object.angle || 0) + delta });
+    object.setCoords();
+    this.getGraphics()?._canvas.requestRenderAll();
+    if (this.activeObjectId !== null) this.scheduleCardPersistence(this.activeObjectId);
+  }
+
+  private flipSelectedObject(axis: 'x' | 'y'): void | Promise<unknown> {
+    const object = this.getActiveFabricObject();
+    if (!object) return axis === 'x' ? this.editor!.flipX() : this.editor!.flipY();
+    const key = axis === 'x' ? 'flipX' : 'flipY';
+    object.set({ [key]: !object[key] });
+    object.setCoords();
+    this.getGraphics()?._canvas.requestRenderAll();
+    if (this.activeObjectId !== null) this.scheduleCardPersistence(this.activeObjectId);
+  }
+
+  private getActiveFabricObject(): {
+    angle?: number;
+    flipX?: boolean;
+    flipY?: boolean;
+    set(values: Record<string, unknown>): void;
+    setCoords(): void;
+  } | null {
+    return this.activeObjectId === null ? null : this.getGraphics()?.getObject(this.activeObjectId) ?? null;
   }
 
   private nextCardPosition(
@@ -719,10 +752,14 @@ export class EditorCanvasComponent implements AfterViewInit, OnChanges, OnDestro
     getObject(id: number): {
       angle?: number;
       left?: number;
+      flipX?: boolean;
+      flipY?: boolean;
       scaleX?: number;
       scaleY?: number;
       top?: number;
       getPointByOrigin(originX: string, originY: string): { x: number; y: number };
+      set(values: Record<string, unknown>): void;
+      setCoords(): void;
     } | null;
   } | null {
     return (this.editor as unknown as { _graphics?: ReturnType<EditorCanvasComponent['getGraphics']> })?._graphics ?? null;

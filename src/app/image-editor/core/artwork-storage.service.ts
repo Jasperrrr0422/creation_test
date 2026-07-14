@@ -13,6 +13,8 @@ export interface StoredCanvasCard {
   scaleX: number;
   scaleY: number;
   angle: number;
+  flipX?: boolean;
+  flipY?: boolean;
   createdAt: string;
 }
 
