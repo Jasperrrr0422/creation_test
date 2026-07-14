@@ -92,11 +92,6 @@ export class AiImageStateService {
     this.persistPreferences();
   }
 
-  updateToken(apiToken: string): void {
-    this.patch({ preferences: { ...this.snapshot.preferences, apiToken: this.normalizeTokenInput(apiToken) } });
-    this.persistPreferences();
-  }
-
   selectModel(modelId: AiModelId): void {
     const model = this.getModel(modelId);
     const mode = model.modes.includes(this.snapshot.preferences.mode)
@@ -189,7 +184,7 @@ export class AiImageStateService {
     this.startProgress();
 
     const calls = Array.from({ length: request.batchSize }, () =>
-      this.api.generate(request, model, this.snapshot.preferences.apiToken).pipe(
+      this.api.generate(request, model).pipe(
         mergeMap((blob) => this.blobToDataUrl(blob)),
         map((dataUrl): BatchResult => ({ image: this.createGeneratedImage(request, dataUrl), error: null })),
         catchError((error: AiApiError) => of<BatchResult>({ image: null, error }))
@@ -243,10 +238,6 @@ export class AiImageStateService {
   private validateRequest(request: AiGenerationRequest): string | null {
     if (!request.prompt.trim()) return 'Describe how you want to edit the image.';
     if (!request.sourceImageDataUrl) return 'Select an image card before editing.';
-    const token = this.snapshot.preferences.apiToken;
-    if (token && !token.startsWith('hf_')) {
-      return 'Hugging Face token must start with "hf_". Paste only the token value, or clear the field to use HF_TOKEN.';
-    }
     if (this.snapshot.quota.exhausted || this.snapshot.quota.used + request.batchSize > this.snapshot.quota.monthlyLimit) {
       return 'The monthly request limit is exhausted.';
     }
@@ -373,7 +364,6 @@ export class AiImageStateService {
       [item.id]: { ...item.defaults, ...(stored.parametersByModel?.[item.id] ?? {}) },
     }), defaults);
     return {
-      apiToken: stored.apiToken ?? '',
       activeModelId,
       mode,
       prompt: stored.prompt ?? '保持主体和构图不变，将画面改为黑白极简品牌海报',
@@ -393,15 +383,6 @@ export class AiImageStateService {
     if (!this.storage.savePreferences(this.snapshot.preferences)) {
       this.patch({ error: 'Local preferences could not be saved.' });
     }
-  }
-
-  private normalizeTokenInput(value: string): string {
-    return value
-      .trim()
-      .replace(/^bearer\s+/i, '')
-      .replace(/^["']|["']$/g, '')
-      .replace(/[\u200B-\u200D\uFEFF]/g, '')
-      .trim();
   }
 
   private patch(statePatch: Partial<AiImageState>): void {

@@ -15,9 +15,8 @@ export class AiApiError extends Error {
 export class AiImageApiService {
   constructor(private readonly http: HttpClient) {}
 
-  generate(request: AiGenerationRequest, model: AiModelConfig, apiToken: string): Observable<Blob> {
+  generate(request: AiGenerationRequest, model: AiModelConfig): Observable<Blob> {
     return this.http.post('/api/ai/generate', {
-      token: apiToken,
       model: model.endpoint,
       mode: request.mode,
       prompt: request.prompt,
@@ -59,7 +58,7 @@ export class AiImageApiService {
   private messageForStatus(status: number, detail: string): string {
     if (status === 400 || status === 422) return detail || 'The image or generation parameters are invalid.';
     if (status === 401 || status === 403) {
-      return detail || 'Add a valid Hugging Face token or configure HF_TOKEN on the server.';
+      return detail || 'Configure HF_TOKEN on the server or in Vercel Environment Variables.';
     }
     if (status === 402) return 'The Hugging Face inference credit is exhausted.';
     if (status === 413) return 'The source image is too large. Use a smaller canvas and try again.';

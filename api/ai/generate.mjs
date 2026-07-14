@@ -1,6 +1,14 @@
 import { AiGatewayError, generateQwenImage } from '../../server/ai-request.mjs';
 
 export default async function handler(request, response) {
+  if (request.method === 'GET') {
+    response.status(200).json({
+      hasServerToken: Boolean(process.env.HF_TOKEN),
+      tokenPrefix: process.env.HF_TOKEN ? process.env.HF_TOKEN.slice(0, 3) : '',
+    });
+    return;
+  }
+
   if (request.method !== 'POST') {
     response.status(405).json({ message: 'Method not allowed.' });
     return;

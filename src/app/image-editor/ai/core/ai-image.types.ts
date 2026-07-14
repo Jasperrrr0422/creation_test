@@ -62,7 +62,6 @@ export interface AiQuotaState {
 }
 
 export interface AiPreferences {
-  apiToken: string;
   activeModelId: AiModelId;
   mode: AiGenerationMode;
   prompt: string;

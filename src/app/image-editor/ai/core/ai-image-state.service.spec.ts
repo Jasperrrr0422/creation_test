@@ -36,7 +36,7 @@ describe('AiImageStateService', () => {
     service = TestBed.inject(AiImageStateService);
   });
 
-  it('allows the gateway to use a server-managed token when the browser token is empty', fakeAsync(() => {
+  it('uses the server-managed token through the gateway', fakeAsync(() => {
     api.generate.and.returnValue(throwError(() => new AiApiError('Server token is missing.', 401)));
     service.setSourceImage('data:image/png;base64,AA==');
 
@@ -44,7 +44,6 @@ describe('AiImageStateService', () => {
     service.generate().subscribe((images) => generatedCount = images.length);
 
     expect(api.generate).toHaveBeenCalledTimes(1);
-    expect(api.generate.calls.mostRecent().args[2]).toBe('');
     expect(generatedCount).toBe(0);
     tick(700);
   }));

@@ -16,7 +16,7 @@ export async function generateQwenImage(payload) {
   validatePayload(payload);
   await configureNetwork();
   const { InferenceClient } = await import('@huggingface/inference');
-  const accessToken = normalizeToken(payload.token || process.env.HF_TOKEN || '');
+  const accessToken = resolveAccessToken(payload);
   const client = new InferenceClient(accessToken);
   const sourceImage = dataUrlToBlob(payload.sourceImageDataUrl);
   const parameters = payload.parameters || {};
@@ -51,7 +51,6 @@ export async function generateQwenImage(payload) {
 
 function validatePayload(payload) {
   if (!payload || typeof payload !== 'object') throw new AiGatewayError('Request body is required.', 400);
-  normalizeToken(payload.token || process.env.HF_TOKEN || '');
   if (typeof payload.model !== 'string' || !payload.model.startsWith('Qwen/Qwen-Image-Edit')) {
     throw new AiGatewayError('Unsupported image model.', 400);
   }
@@ -68,16 +67,31 @@ function dataUrlToBlob(dataUrl) {
   return new Blob([Buffer.from(encoded, 'base64')], { type: mimeType });
 }
 
-function normalizeToken(value) {
+function resolveAccessToken(payload) {
+  const providedToken = normalizeTokenString(payload?.token);
+  if (providedToken) return validateToken(providedToken, 'input');
+
+  const serverToken = normalizeTokenString(process.env.HF_TOKEN);
+  if (serverToken) return validateToken(serverToken, 'server');
+
+  throw new AiGatewayError('Server HF_TOKEN is not configured. Add HF_TOKEN in Vercel Environment Variables, redeploy, or paste an hf_ token in the panel.', 401);
+}
+
+function normalizeTokenString(value) {
+  if (value === null || value === undefined) return '';
   const token = String(value || '')
     .trim()
     .replace(/^bearer\s+/i, '')
     .replace(/^["']|["']$/g, '')
     .replace(/[\u200B-\u200D\uFEFF]/g, '')
     .trim();
-  if (!token) throw new AiGatewayError('A Hugging Face token is required.', 401);
+  return token;
+}
+
+function validateToken(token, source) {
   if (!token.startsWith('hf_')) {
-    throw new AiGatewayError('Hugging Face token must start with "hf_". Paste only the token value, or clear the token field to use the server HF_TOKEN.', 401);
+    const sourceLabel = source === 'server' ? 'Vercel HF_TOKEN' : 'Hugging Face token field';
+    throw new AiGatewayError(`${sourceLabel} must start with "hf_". Paste only the token value.`, 401);
   }
   if (!/^[\x21-\x7e]+$/.test(token)) {
     throw new AiGatewayError('Hugging Face token contains unsupported characters. Paste the raw hf_ token only.', 401);

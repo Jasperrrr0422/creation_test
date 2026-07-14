@@ -2,22 +2,18 @@ import { Injectable } from '@angular/core';
 import { AiGeneratedImage, AiImageState, AiPreferences } from './ai-image.types';
 
 const PREFERENCES_KEY = 'creaition.ai.preferences.v2';
-const TOKEN_KEY = 'creaition.ai.token.v1';
 const HISTORY_KEY = 'creaition.ai.history.v2';
 const QUOTA_KEY = 'creaition.ai.quota.v2';
 
 @Injectable({ providedIn: 'root' })
 export class AiStorageService {
   loadPreferences(): Partial<AiPreferences> {
-    const preferences = this.readJson<Partial<AiPreferences>>(localStorage, PREFERENCES_KEY, {});
-    return { ...preferences, apiToken: sessionStorage.getItem(TOKEN_KEY) ?? '' };
+    return this.readJson<Partial<AiPreferences>>(localStorage, PREFERENCES_KEY, {});
   }
 
   savePreferences(preferences: AiPreferences): boolean {
-    const { apiToken, ...safePreferences } = preferences;
     try {
-      localStorage.setItem(PREFERENCES_KEY, JSON.stringify(safePreferences));
-      apiToken ? sessionStorage.setItem(TOKEN_KEY, apiToken) : sessionStorage.removeItem(TOKEN_KEY);
+      localStorage.setItem(PREFERENCES_KEY, JSON.stringify(preferences));
       return true;
     } catch {
       return false;

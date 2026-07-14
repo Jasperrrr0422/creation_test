@@ -23,7 +23,7 @@ https://<your-project>.vercel.app
 - Fabric.js，来自 TUI Image Editor 内部依赖
 - Hugging Face Inference SDK
 - Qwen Image Edit
-- IndexedDB、localStorage、sessionStorage
+- IndexedDB、localStorage
 - Vercel Serverless Functions
 
 ## 本地环境部署步骤
@@ -97,14 +97,22 @@ Qwen/Qwen-Image-Edit-2511
 5. 开启调用 Inference Providers 所需权限。
 6. 创建后复制 Token，格式通常以 `hf_` 开头。
 
-### 本地使用 Token
+### 本地配置 Token
 
-有两种方式：
+AI 密钥只在服务端配置，前端页面不提供 Token 输入框，也不会把密钥保存到浏览器。
 
-1. 在页面右侧 AI 面板的 `Hugging Face token` 输入框中临时输入 Token。
-2. 或者在启动前配置服务端环境变量 `HF_TOKEN`。
+本地运行前设置环境变量：
 
-本地临时输入的 Token 只保存在当前浏览器标签页的 `sessionStorage`，关闭标签页后会消失，不会写入长期存储。
+```bash
+HF_TOKEN=hf_xxxxx npm start
+```
+
+如果使用 zsh，也可以先导出变量再启动：
+
+```bash
+export HF_TOKEN=hf_xxxxx
+npm start
+```
 
 ### Vercel 配置 Token
 
@@ -121,7 +129,12 @@ Value: 你的 Hugging Face Token
 
 4. 勾选 Production、Preview、Development。
 5. 重新部署项目。
-6. 在线页面中保持 Token 输入框为空，服务端会自动读取 `HF_TOKEN`。
+6. 重新部署后，服务端会自动读取 `HF_TOKEN`。
+7. 可打开 `/api/ai/generate` 检查线上函数是否读到密钥。正常结果类似：
+
+```json
+{"hasServerToken":true,"tokenPrefix":"hf_"}
+```
 
 公开演示不建议无限开放个人 Token。正式产品应增加用户登录、服务端限流、真实配额记录和密钥轮换机制。
 
@@ -188,7 +201,7 @@ Value: 你的 Hugging Face Token
 - 统一记录提示词、来源图、生成图集、历史记录、收藏、加载状态、错误信息、进度和模型配置。
 - 每个模型的参数隔离存储，包括尺寸、步数、引导强度、变化强度和批量数。
 - 用户偏好和模型配置持久化到 `localStorage`。
-- Token 临时存储到 `sessionStorage`。
+- AI Token 只保存在服务端环境变量，不进入浏览器存储。
 - 图片历史和收藏持久化到 `localStorage`。
 - 画布图片、位置、缩放和旋转持久化到 IndexedDB。
 
@@ -351,7 +364,7 @@ font-variation-settings: "wght" 80, "slnt" 12;
 | 画布图片、位置、缩放、旋转 | IndexedDB | 刷新后可恢复，同一浏览器有效 |
 | AI 模型参数和用户偏好 | localStorage | 按模型隔离保存 |
 | AI 历史和收藏 | localStorage | 最多保留近期记录 |
-| Hugging Face Token | sessionStorage 或服务端环境变量 | 页面输入的 Token 关闭标签页后失效 |
+| Hugging Face Token | 服务端环境变量 `HF_TOKEN` | 前端不接收、不保存、不传递密钥 |
 | 月度保护计数 | localStorage | 本地保护计数，不代表 Hugging Face 真实账单 |
 
 如果要做成正式多用户产品，需要增加：

@@ -20,18 +20,6 @@
 
     <div class="panel-content">
       <section>
-        <label class="field-label" for="hf-token">Hugging Face token (optional)</label>
-        <input
-          id="hf-token"
-          type="password"
-          autocomplete="off"
-          [ngModel]="state.preferences.apiToken"
-          (ngModelChange)="ai.updateToken($event)"
-          placeholder="Uses server token when empty"
-        />
-      </section>
-
-      <section>
         <div class="field-grid">
           <label>
             <span>Model</span>

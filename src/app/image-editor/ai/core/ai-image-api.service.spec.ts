@@ -38,11 +38,11 @@ describe('AiImageApiService', () => {
       defaults: request,
     };
 
-    service.generate(request, model, 'hf_test').subscribe((image) => expect(image.type).toBe('image/png'));
+    service.generate(request, model).subscribe((image) => expect(image.type).toBe('image/png'));
 
     const call = http.expectOne('/api/ai/generate');
     expect(call.request.method).toBe('POST');
-    expect(call.request.body.token).toBe('hf_test');
+    expect(call.request.body.token).toBeUndefined();
     expect(call.request.body.model).toBe('Qwen/Qwen-Image-Edit');
     call.flush(new Blob(['image'], { type: 'image/png' }));
   });

@@ -4,7 +4,6 @@ import { AiPreferences } from './ai-image.types';
 
 describe('AiStorageService', () => {
   const preferences: AiPreferences = {
-    apiToken: 'hf_private',
     activeModelId: 'qwen-image-edit',
     mode: 'image-to-image',
     prompt: 'Edit this image',
@@ -17,14 +16,12 @@ describe('AiStorageService', () => {
 
   beforeEach(() => {
     localStorage.clear();
-    sessionStorage.clear();
   });
 
-  it('keeps the token in session storage and persists non-secret preferences locally', () => {
+  it('persists AI preferences without browser-side secrets', () => {
     const service = TestBed.inject(AiStorageService);
     expect(service.savePreferences(preferences)).toBeTrue();
-    expect(sessionStorage.getItem('creaition.ai.token.v1')).toBe('hf_private');
-    expect(localStorage.getItem('creaition.ai.preferences.v2')).not.toContain('hf_private');
-    expect(service.loadPreferences().apiToken).toBe('hf_private');
+    expect(localStorage.getItem('creaition.ai.preferences.v2')).toContain('Edit this image');
+    expect(service.loadPreferences().prompt).toBe('Edit this image');
   });
 });
